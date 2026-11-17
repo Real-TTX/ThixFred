@@ -1,4 +1,5 @@
 name: desktop
+# Manually: Actions › desktop › Run workflow (workflow_dispatch), e.g. after Actions were switched on.
 
 # Builds, tests and packages the ThixFred desktop app for Windows and macOS for every branch.
 #   main  -> release : <major>.<minor>.<run number>-<date>   e.g. 0.1.42-20261115

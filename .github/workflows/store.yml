@@ -1,4 +1,5 @@
 name: store
+# Manually: Actions › store › Run workflow (workflow_dispatch), e.g. after Actions were switched on.
 
 # Builds ThixFred's store from the folder store/ (plugins and themes) and publishes it:
 #   every branch / pull request : the packages and store.json as a workflow artifact (checked: manifests, scripts)
