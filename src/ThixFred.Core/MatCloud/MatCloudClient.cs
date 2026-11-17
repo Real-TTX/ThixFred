@@ -1,4 +1,4 @@
-// MatCloud.Contract 1.0.0 – a copy from MatCloud, do not edit here
+// MatCloud.Contract 1.1.0 – a copy from MatCloud, do not edit here
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;

@@ -9,5 +9,6 @@
   "mode": "Filter",
   "scriptWindows": "zeit.ps1",
   "scriptMacOS": "zeit.py",
-  "timeoutSeconds": 5
+  "timeoutSeconds": 5,
+  "homepage": "https://github.com/Real-TTX/ThixFred/tree/main/store/plugins/zeit"
 }

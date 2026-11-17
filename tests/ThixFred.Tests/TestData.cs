@@ -13,9 +13,11 @@ namespace ThixFred.Tests;
 /// </summary>
 internal sealed class TestData : IDisposable
 {
-    public TestData()
+    /// <param name="folder">A data folder of the test's own that stays after the test (another computer that comes back); null: a new one.</param>
+    public TestData(string? folder = null)
     {
-        Folder = Path.Combine(Path.GetTempPath(), "thixfred-tests", Guid.NewGuid().ToString("N"));
+        _keepFolder = folder is not null;
+        Folder = folder ?? Path.Combine(Path.GetTempPath(), "thixfred-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Folder);
         AppPaths.UseDirectoryForTests(Folder);
         SettingsStore.Reset();
@@ -44,6 +46,8 @@ internal sealed class TestData : IDisposable
         };
         Ui.OpenExternalForTests = _ => { }; // never a real browser or folder
     }
+
+    private readonly bool _keepFolder;
 
     public string Folder { get; }
 
@@ -86,6 +90,11 @@ internal sealed class TestData : IDisposable
         SettingsStore.Reset();
         AppPaths.UseDirectoryForTests(null);
         PluginService.Invalidate();
+        if (_keepFolder)
+        {
+            return;
+        }
+
         try
         {
             Directory.Delete(Folder, recursive: true);

@@ -38,8 +38,9 @@ no image library (icons: the shell / sips + an own PNG writer). The desktop app 
 - **MatDesktop** (`src/ThixFred/MatDesktop/`) and **the MatCloud contract** (`src/ThixFred.Core/MatCloud/`) are COPIES: never edit
   them here (tests hold them to their `matdesktop.version` / `matcloud.version`). MatDesktop: copy again from MatDesign
   (`node tools/matdesktop-copy.js <path>/ThixFred/src/ThixFred` there); contract: `node ../MatCloud/tools/contract-copy.js src/ThixFred.Core`.
-- **MatCloud must know the app id `fred`** (`CloudApps` in `src/MatCloud.Contract`, then copy the contract again here and use
-  `CloudApps.Fred` instead of `SyncService.CloudAppId`): until then MatCloud refuses ThixFred's devices ("unknown app").
+- ThixFred is `CloudApps.Fred` ("fred") in MatCloud since MatCloud.Contract 1.1.0; an older MatCloud refuses its devices ("unknown app").
+- `THIXFRED_CLOUD_URL` / `_USER` / `_PASSWORD` enable `CloudEndToEndTests` (two computers against a real MatCloud, e.g. the local
+  stack, an account with a password).
 
 ## Map
 

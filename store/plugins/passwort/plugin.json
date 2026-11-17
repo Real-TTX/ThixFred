@@ -9,5 +9,6 @@
   "mode": "Filter",
   "scriptWindows": "passwort.ps1",
   "scriptMacOS": "passwort.sh",
-  "timeoutSeconds": 5
+  "timeoutSeconds": 5,
+  "homepage": "https://github.com/Real-TTX/ThixFred/tree/main/store/plugins/passwort"
 }

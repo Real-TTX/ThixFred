@@ -1,4 +1,4 @@
-// MatCloud.Contract 1.0.0 – a copy from MatCloud, do not edit here
+// MatCloud.Contract 1.1.0 – a copy from MatCloud, do not edit here
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -72,6 +72,7 @@ public static class CloudApps
     public const string Calendar = "calendar";
     public const string Tunnel = "tunnel";
     public const string Launcher = "launcher";
+    public const string Fred = "fred";
 
     public static readonly IReadOnlyList<CloudApp> All =
     [
@@ -80,6 +81,7 @@ public static class CloudApps
         new(Calendar, "ThixCalendar", "Kalender-Einstellungen auf allen Geräten"),
         new(Tunnel, "ThixTunnel", "Verbindungen und Profile auf allen Geräten"),
         new(Launcher, "ThixLauncher", "Die Thix-Apps und ihre Einstellungen"),
+        new(Fred, "ThixFred", "Der Launcher: Einstellungen, Themes, Websuchen, Skripte und Plugins"),
     ];
 
     public static CloudApp? Find(string? id) => All.FirstOrDefault(a => string.Equals(a.Id, id, StringComparison.Ordinal));

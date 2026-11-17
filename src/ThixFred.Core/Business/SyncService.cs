@@ -32,11 +32,8 @@ public sealed record SyncStatus(CloudState State, string Message, DateTimeOffset
 /// </summary>
 public static class SyncService
 {
-    /// <summary>
-    /// ThixFred's app id in MatCloud. MatCloud accepts only the ids of its <see cref="CloudApps"/>: "fred" must be added there
-    /// (src/MatCloud.Contract, then copied again) before a device of ThixFred can sign in.
-    /// </summary>
-    public const string CloudAppId = "fred";
+    /// <summary>ThixFred's app id in MatCloud (<see cref="CloudApps.Fred"/>, since MatCloud.Contract 1.1.0).</summary>
+    public const string CloudAppId = CloudApps.Fred;
 
     private const int LongPollSeconds = 25;
     private const string NotConnected = "Nicht verbunden";
