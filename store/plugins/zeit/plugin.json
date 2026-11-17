@@ -1,0 +1,13 @@
+{
+  "id": "zeit",
+  "name": "Zeitstempel",
+  "version": "1.0.0",
+  "author": "ThixFred",
+  "description": "Jetzt als Unix-Zeit, ISO 8601 und Kalenderwoche – oder „ts 1763380000“ als Datum.",
+  "keyword": "ts",
+  "icon": "clock",
+  "mode": "Filter",
+  "scriptWindows": "zeit.ps1",
+  "scriptMacOS": "zeit.py",
+  "timeoutSeconds": 5
+}

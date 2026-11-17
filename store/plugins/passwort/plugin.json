@@ -1,0 +1,13 @@
+{
+  "id": "passwort",
+  "name": "Passwort-Generator",
+  "version": "1.0.0",
+  "author": "ThixFred",
+  "description": "Fünf sichere Passwörter – „pw 24“ für 24 Zeichen. Enter kopiert.",
+  "keyword": "pw",
+  "icon": "lock",
+  "mode": "Filter",
+  "scriptWindows": "passwort.ps1",
+  "scriptMacOS": "passwort.sh",
+  "timeoutSeconds": 5
+}

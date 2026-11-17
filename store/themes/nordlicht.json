@@ -1,0 +1,18 @@
+{
+  "name": "Nordlicht",
+  "author": "ThixFred",
+  "version": "1.0.0",
+  "description": "Dunkles Glas mit grünem Akzent.",
+  "isDark": true,
+  "backdrop": "Acrylic",
+  "background": "#E00E1B1E",
+  "border": "#4034D399",
+  "text": "#FFE6FFF5",
+  "mutedText": "#FF8FCBB6",
+  "selection": "#4D10B981",
+  "accent": "#FF34D399",
+  "cornerRadius": 16,
+  "fontSize": 24,
+  "width": 720,
+  "padding": 10
+}

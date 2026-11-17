@@ -1,0 +1,63 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Company>Matthias Schmoldt</Company>
+    <Product>ThixFred</Product>
+    <Authors>Matthias Schmoldt</Authors>
+    <Copyright>© Matthias Schmoldt</Copyright>
+    <SatelliteResourceLanguages>de;en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!--
+    One target framework for Windows and macOS: ThixFred needs no Windows SDK projection (WinRT) – its Windows parts are Win32
+    and COM through LibraryImport / generated COM, guarded by OperatingSystem.IsWindows() – so the download stays small.
+  -->
+  <PropertyGroup>
+    <DesktopTargetFramework>net10.0</DesktopTargetFramework>
+  </PropertyGroup>
+
+  <!--
+    Versioning (single source of truth: Major/Minor below). CI sets Channel / BuildNumber / BuildDate:
+      release : <major>.<minor>.<build>-<date>   e.g. 0.1.42-20261114   (branch main)
+      nightly : nightly-<build>-<date>          e.g. nightly-43-20261114 (branch dev)
+      local   : local-<date>                    e.g. local-20261114      (every local build)
+    The build number is the GitHub run number and increases with every build; the update check compares it.
+  -->
+  <PropertyGroup>
+    <ThixFredMajor>0</ThixFredMajor>
+    <ThixFredMinor>1</ThixFredMinor>
+
+    <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
+    <Channel Condition="'$(Channel)' == ''">local</Channel>
+    <BuildDate Condition="'$(BuildDate)' == ''">$([System.DateTime]::UtcNow.ToString('yyyyMMdd'))</BuildDate>
+
+    <Version>$(ThixFredMajor).$(ThixFredMinor).$(BuildNumber)</Version>
+    <AssemblyVersion>$(ThixFredMajor).$(ThixFredMinor).0.0</AssemblyVersion>
+    <FileVersion>$(ThixFredMajor).$(ThixFredMinor).$(BuildNumber).0</FileVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Channel)' == 'release'">
+    <InformationalVersion>$(ThixFredMajor).$(ThixFredMinor).$(BuildNumber)-$(BuildDate)</InformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Channel)' == 'nightly'">
+    <InformationalVersion>nightly-$(BuildNumber)-$(BuildDate)</InformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Channel)' == 'local'">
+    <InformationalVersion>local-$(BuildDate)</InformationalVersion>
+  </PropertyGroup>
+
+  <!-- The running program needs channel and build number (update check, about page). -->
+  <ItemGroup>
+    <AssemblyMetadata Include="ThixFredChannel" Value="$(Channel)" />
+    <AssemblyMetadata Include="ThixFredBuildNumber" Value="$(BuildNumber)" />
+    <AssemblyMetadata Include="ThixFredRepository" Value="Real-TTX/ThixFred" />
+  </ItemGroup>
+
+</Project>

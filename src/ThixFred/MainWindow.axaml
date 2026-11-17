@@ -1,0 +1,39 @@
+<mat:MatWindow xmlns="https://github.com/avaloniaui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:mat="using:MatDesktop"
+               xmlns:controls="using:ThixFred.Controls"
+               x:Class="ThixFred.MainWindow"
+               Title="ThixFred" Width="1120" Height="740" MinWidth="760" MinHeight="460"
+               WindowStartupLocation="CenterScreen">
+  <!--
+    The window behind the launcher (the launcher itself is LauncherWindow): MatDesktop's chrome – the title bar (DESK-03: logo
+    and word mark, "Launcher öffnen" with the shortcut in the middle, the caption buttons / traffic lights), the menu (DESK-04:
+    Plugins, Store, Themes, Websuchen, Settings below the line, at its foot the cloud state, the version = About) and the page.
+    Built once and shown/hidden from the tray, the launcher and a second start.
+  -->
+  <Grid RowDefinitions="Auto,*">
+    <mat:MatTitleBar x:Name="TitleBar" AppName="ThixFred" CloseKey="Esc">
+      <mat:MatTitleBar.WordMark>
+        <TextBlock VerticalAlignment="Center" FontSize="{DynamicResource Mat.FontSizeXl}" FontWeight="SemiBold">
+          <Run Text="Thix" /><Run Text="Fred" Foreground="{DynamicResource Mat.AccentText}" />
+        </TextBlock>
+      </mat:MatTitleBar.WordMark>
+      <mat:MatTitleBar.Center>
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+          <Button x:Name="OpenLauncherButton" Click="OnOpenLauncherClick" VerticalAlignment="Center" ToolTip.Tip="Den Launcher öffnen">
+            <controls:IconLabel Icon="search" Text="Launcher öffnen" />
+          </Button>
+          <Button x:Name="HotkeyBadge" Theme="{StaticResource MatButton.Link}" Click="OnHotkeyBadgeClick" VerticalAlignment="Center"
+                  ToolTip.Tip="Tastenkürzel ändern" AutomationProperties.Name="Tastenkürzel">
+            <controls:KeyCaps x:Name="HotkeyCaps" Padding="8,3" />
+          </Button>
+        </StackPanel>
+      </mat:MatTitleBar.Center>
+    </mat:MatTitleBar>
+
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+      <mat:MatNav x:Name="Sidebar" AppName="ThixFred" />
+      <ContentControl Grid.Column="1" x:Name="PageHost" />
+    </Grid>
+  </Grid>
+</mat:MatWindow>

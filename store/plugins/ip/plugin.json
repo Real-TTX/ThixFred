@@ -1,0 +1,13 @@
+{
+  "id": "ip",
+  "name": "Meine IP",
+  "version": "1.0.0",
+  "author": "ThixFred",
+  "description": "Die öffentliche und die lokalen IP-Adressen – Enter kopiert.",
+  "keyword": "ip",
+  "icon": "network",
+  "mode": "Filter",
+  "scriptWindows": "ip.ps1",
+  "scriptMacOS": "ip.sh",
+  "timeoutSeconds": 8
+}

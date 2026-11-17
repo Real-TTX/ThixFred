@@ -1,0 +1,13 @@
+{
+  "id": "base64",
+  "name": "Base64",
+  "version": "1.0.0",
+  "author": "ThixFred",
+  "description": "Text in Base64 kodieren und Base64 dekodieren – Enter kopiert.",
+  "keyword": "b64",
+  "icon": "code",
+  "mode": "Filter",
+  "scriptWindows": "base64.ps1",
+  "scriptMacOS": "base64.sh",
+  "timeoutSeconds": 5
+}

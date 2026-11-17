@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests of the desktop app: the business layer (search, calculator, plugins, scripts, store, themes, sync against an in-memory
+    cloud) and the UI,
+    rendered headless with Avalonia + Skia (keyboard flows, screenshots: THIXFRED_SCREENSHOTS=<folder>).
+  -->
+  <PropertyGroup>
+    <TargetFramework>$(DesktopTargetFramework)</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Skia" Version="11.3.22" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ThixFred\ThixFred.csproj" />
+    <ProjectReference Include="..\..\src\ThixFred.Core\ThixFred.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,18 @@
+{
+  "name": "Papier",
+  "author": "ThixFred",
+  "version": "1.0.0",
+  "description": "Hell, ruhig, ohne Glas.",
+  "isDark": false,
+  "backdrop": "Solid",
+  "background": "#FFFDFCF8",
+  "border": "#FFE7E2D8",
+  "text": "#FF2B2A27",
+  "mutedText": "#FF8A857B",
+  "selection": "#FFF1ECE2",
+  "accent": "#FF3B6E5A",
+  "cornerRadius": 8,
+  "fontSize": 22,
+  "width": 680,
+  "padding": 8
+}

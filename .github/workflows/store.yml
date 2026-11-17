@@ -1,0 +1,79 @@
+name: store
+
+# Builds ThixFred's store from the folder store/ (plugins and themes) and publishes it:
+#   every branch / pull request : the packages and store.json as a workflow artifact (checked: manifests, scripts)
+#   main (push)                 : the rolling release "store-channel" – ThixFred reads
+#                                 https://github.com/<owner>/ThixFred/releases/download/store-channel/store.json
+# tools/store-build.js writes deterministic zips (fixed times, sorted files) with their SHA-256 in store.json; ThixFred checks
+# the hash before it unpacks anything. A new plugin or theme is a folder / file in store/ and a higher "version" for an update.
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'store/**'
+      - 'tools/store-build.js'
+      - '.github/workflows/store.yml'
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'store/**'
+      - 'tools/store-build.js'
+      - '.github/workflows/store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: store-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # the whole history: the date of the last change of each file is its "updatedAt" in the catalog
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore the change dates of the store files
+        shell: bash
+        run: |
+          git ls-files store | while read -r file; do
+            touch -d "$(git log -1 --format=%cI -- "$file")" "$file"
+          done
+
+      - name: Build the store
+        run: node tools/store-build.js artifacts/store
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store
+          path: artifacts/store/
+          retention-days: 30
+
+      # The packages go up before the catalog: ThixFred never reads a catalog whose package is not there yet.
+      - name: Publish to the store channel
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag=store-channel
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" --title "ThixFred Store" --prerelease \
+              --notes "Der Store von ThixFred: Plugins und Themes. ThixFred liest store.json von hier (Einstellungen › Erweitert › Adresse des Stores)."
+          fi
+          for file in artifacts/store/*; do
+            if [ "$(basename "$file")" != store.json ]; then gh release upload "$tag" "$file" --clobber; fi
+          done
+          gh release upload "$tag" artifacts/store/store.json --clobber
+          echo "Published $(ls artifacts/store | wc -l) files to $tag"

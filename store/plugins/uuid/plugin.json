@@ -1,0 +1,13 @@
+{
+  "id": "uuid",
+  "name": "UUID",
+  "version": "1.0.0",
+  "author": "ThixFred",
+  "description": "Erzeugt neue UUIDs – Enter kopiert. „uuid 10“ liefert zehn.",
+  "keyword": "uuid",
+  "icon": "key",
+  "mode": "Filter",
+  "scriptWindows": "uuid.ps1",
+  "scriptMacOS": "uuid.sh",
+  "timeoutSeconds": 5
+}
