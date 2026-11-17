@@ -198,8 +198,12 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+  # Windows is the must; macOS joins when its job succeeded. GitHub's macOS runners are sometimes not available at all ("not
+  # acquired … capacity"): then the release goes out for Windows, the manifest names no macOS package (installed Macs keep
+  # their version until the next build that has one).
   publish:
     needs: [version, windows, macos]
+    if: always() && needs.version.result == 'success' && needs.windows.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -208,18 +212,26 @@ jobs:
           path: artifacts
 
       - uses: actions/download-artifact@v4
+        if: needs.macos.result == 'success'
         with:
           name: macos
           path: artifacts
 
       # The manifest the installed application reads for its update check (UpdateService): "setup"/"sha256" for
-      # Windows, "packages" for each platform.
+      # Windows, "packages" for each platform that was built.
       - name: Write update manifest
         shell: bash
         run: |
           set -euo pipefail
           cd artifacts
           sha() { sha256sum "$1" | cut -d' ' -f1; }
+          mac=""
+          for rid in arm64 x64; do
+            if [ -f "ThixFred-macOS-${rid}.zip" ]; then
+              mac="${mac},
+              \"osx-${rid}\": { \"file\": \"ThixFred-macOS-${rid}.zip\", \"sha256\": \"$(sha "ThixFred-macOS-${rid}.zip")\" }"
+            fi
+          done
           cat > thixfred-update.json <<JSON
           {
             "version": "${{ needs.version.outputs.version }}",
@@ -229,13 +241,12 @@ jobs:
             "sha256": "$(sha ThixFredSetup.exe)",
             "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "packages": {
-              "win-x64": { "file": "ThixFredSetup.exe", "sha256": "$(sha ThixFredSetup.exe)" },
-              "osx-arm64": { "file": "ThixFred-macOS-arm64.zip", "sha256": "$(sha ThixFred-macOS-arm64.zip)" },
-              "osx-x64": { "file": "ThixFred-macOS-x64.zip", "sha256": "$(sha ThixFred-macOS-x64.zip)" }
+              "win-x64": { "file": "ThixFredSetup.exe", "sha256": "$(sha ThixFredSetup.exe)" }${mac}
             }
           }
           JSON
           cat thixfred-update.json
+          node -e "JSON.parse(require('fs').readFileSync('thixfred-update.json','utf8'))"
           ls -l
 
       - uses: actions/upload-artifact@v4
@@ -247,13 +258,14 @@ jobs:
       # One rolling release per channel; each build replaces its files. The packages go up BEFORE the manifest,
       # so an installation never reads a manifest whose package is not there yet.
       - name: Publish to the update channel
-        if: github.event_name == 'push' && needs.version.outputs.channel != 'local'
+        if: github.event_name != 'pull_request' && needs.version.outputs.channel != 'local'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          shopt -s nullglob
           channel="${{ needs.version.outputs.channel }}"
           version="${{ needs.version.outputs.version }}"
           tag="${channel}-channel"
@@ -268,16 +280,22 @@ jobs:
           echo "Published $version to $tag"
 
       - name: Versioned release
-        if: github.event_name == 'push' && needs.version.outputs.channel == 'release'
+        if: github.event_name != 'pull_request' && needs.version.outputs.channel == 'release'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          shopt -s nullglob
           version="${{ needs.version.outputs.version }}"
           cd artifacts
+          files=("ThixFredSetup-${version}.exe")
           cp ThixFredSetup.exe "ThixFredSetup-${version}.exe"
-          for arch in arm64 x64; do cp "ThixFred-macOS-${arch}.dmg" "ThixFred-${version}-macOS-${arch}.dmg"; done
-          gh release create "v${version}" --target "$GITHUB_SHA" --title "ThixFred ${version}" --generate-notes \
-            "ThixFredSetup-${version}.exe" "ThixFred-${version}-macOS-arm64.dmg" "ThixFred-${version}-macOS-x64.dmg"
+          for arch in arm64 x64; do
+            if [ -f "ThixFred-macOS-${arch}.dmg" ]; then
+              cp "ThixFred-macOS-${arch}.dmg" "ThixFred-${version}-macOS-${arch}.dmg"
+              files+=("ThixFred-${version}-macOS-${arch}.dmg")
+            fi
+          done
+          gh release create "v${version}" --target "$GITHUB_SHA" --title "ThixFred ${version}" --generate-notes "${files[@]}"
