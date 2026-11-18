@@ -74,7 +74,10 @@
                   <ToggleSwitch x:Name="WebFallbackSwitch" OnContent="" OffContent="" AutomationProperties.Name="Im Web suchen" />
                 </StackPanel>
               </mat:MatSettingRow>
-              <mat:MatSettingRow Title="Terminal" Description="Hier laufen Befehle nach „&gt;“, z. B. &gt;ping heise.de.">
+              <mat:MatSettingRow Title="Integriertes Terminal" Description="Befehle nach „&gt;“ (z. B. &gt;ping heise.de) laufen im Launcher, die Ausgabe erscheint darunter. Umschalt+Enter öffnet sie im Terminal-Fenster.">
+                <ToggleSwitch x:Name="IntegratedTerminalSwitch" OnContent="" OffContent="" AutomationProperties.Name="Integriertes Terminal" />
+              </mat:MatSettingRow>
+              <mat:MatSettingRow Title="Terminal-Fenster" Description="Für Umschalt+Enter – und für Enter, wenn das integrierte Terminal aus ist. Programme mit eigener Oberfläche (vim, ssh) brauchen es.">
                 <ComboBox x:Name="TerminalChoiceBox" MinWidth="260" AutomationProperties.Name="Terminal" />
               </mat:MatSettingRow>
               <mat:MatSettingRow x:Name="StoreAppsRow" Title="Apps aus dem Microsoft Store" Description="Rechner, Fotos, Einstellungen und andere Store-Apps finden.">

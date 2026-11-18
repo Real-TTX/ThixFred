@@ -32,6 +32,12 @@ public enum LaunchActionKind
     /// <summary>Runs <see cref="LaunchAction.Target"/> in a terminal window that stays open.</summary>
     Terminal,
 
+    /// <summary>Runs <see cref="LaunchAction.Target"/> in the launcher's own terminal (<see cref="Business.IntegratedTerminal"/>).</summary>
+    IntegratedTerminal,
+
+    /// <summary>Installs the plugin <see cref="LaunchAction.Target"/> from the store; then the search is <see cref="LaunchAction.Argument"/>.</summary>
+    StoreInstall,
+
     /// <summary>Asks the program with the process id <see cref="LaunchAction.Target"/> to close (it may ask to save).</summary>
     CloseProcess,
 
@@ -136,6 +142,9 @@ public enum LaunchOutcomeKind
 
     /// <summary>Shows <see cref="LaunchOutcome.Message"/> in the launcher (an error, the output of a script); it stays open.</summary>
     Message,
+
+    /// <summary>The launcher runs <see cref="LaunchOutcome.Query"/> in its terminal and shows the output.</summary>
+    Terminal,
 }
 
 /// <summary>The answer of <see cref="Business.LaunchService.Execute"/>.</summary>

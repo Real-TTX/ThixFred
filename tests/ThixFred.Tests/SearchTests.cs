@@ -128,9 +128,29 @@ public sealed class SearchTests
     }
 
     [Fact]
-    public async Task A_greater_than_sign_runs_the_command_in_a_terminal()
+    public async Task A_greater_than_sign_runs_the_command_in_the_launcher_and_shift_enter_in_a_terminal()
     {
         using var data = new TestData();
+        var terminal = Assert.Single(SearchService.Search(">ping heise.de", 8));
+        Assert.Equal(LaunchActionKind.IntegratedTerminal, terminal.Action.Kind);
+        var outcome = await LaunchService.ExecuteAsync(terminal, terminal.Action, ">ping heise.de");
+        Assert.Equal((LaunchOutcomeKind.Terminal, "ping heise.de"), (outcome.Kind, outcome.Query));
+
+        Assert.Equal(LaunchActionKind.Terminal, terminal.AlternateAction!.Kind);
+        await LaunchService.ExecuteAsync(terminal, terminal.AlternateAction, ">ping heise.de");
+        Assert.Contains("ping heise.de", data.Started.Last().Arguments.Last());
+
+        Assert.Equal("ping heise.de", SearchService.TerminalCommand(">ping heise.de"));
+        Assert.Equal("", SearchService.TerminalCommand(">"));
+        Assert.Null(SearchService.TerminalCommand("ping"));
+        Assert.Equal(">", SearchService.TerminalPrefix());
+    }
+
+    [Fact]
+    public async Task Without_the_integrated_terminal_a_greater_than_sign_runs_the_command_in_a_terminal()
+    {
+        using var data = new TestData();
+        SettingsService.Update(settings => settings with { IntegratedTerminal = false });
         var results = SearchService.Search(">ping heise.de", 8);
         var terminal = Assert.Single(results);
         Assert.Equal("ping heise.de", terminal.Title);
@@ -144,6 +164,44 @@ public sealed class SearchTests
         var recent = SearchService.Search(">", 8);
         Assert.Equal("ping heise.de", recent[0].Title);
         Assert.Equal(">ping heise.de", recent[0].Autocomplete);
+    }
+
+    [Fact]
+    public void The_beginning_of_a_keyword_finds_its_web_search()
+    {
+        using var data = new TestData();
+
+        // "w alfred": Wikipedia ("wiki") first, the fallback Google stays last
+        var results = SearchService.Search("w alfred", 8);
+        Assert.Equal("web:wikipedia", results[0].Id);
+        Assert.Equal("„alfred“ mit Wikipedia suchen", results[0].Title);
+        Assert.True(results[^1].IsFallback);
+
+        // the whole keyword still decides alone
+        Assert.Equal("web:wikipedia", Assert.Single(SearchService.Search("wiki alfred", 8)).Id);
+
+        // "wi" offers the search, Enter fills in its keyword
+        var hint = SearchService.Search("wi", 8).Single(result => result.Id == "websearch:wikipedia");
+        Assert.Equal((LaunchActionKind.SetQuery, "wiki "), (hint.Action.Kind, hint.Action.Target));
+    }
+
+    [Fact]
+    public async Task The_keyword_of_a_store_plugin_that_is_not_installed_offers_to_install_it()
+    {
+        using var data = new TestData();
+        StoreService.SetKnownForTests(new StoreCatalog
+        {
+            Items = [new StoreItem { Id = "ip", Kind = StoreItemKind.Plugin, Name = "Meine IP", Keyword = "ip", Description = "Die IP-Adressen" }],
+        });
+        var install = SearchService.Search("ip", 8)[0];
+        Assert.Equal("store:ip", install.Id);
+        Assert.Equal("Meine IP aus dem Store installieren", install.Title);
+        Assert.Equal((LaunchActionKind.StoreInstall, "ip", "ip"), (install.Action.Kind, install.Action.Target, install.Action.Argument));
+
+        // without a store nothing is installed and the launcher says why
+        data.Policies.Add("DisableStore");
+        var outcome = await LaunchService.ExecuteAsync(install, install.Action, "ip");
+        Assert.True(outcome.IsError);
     }
 
     [Fact]

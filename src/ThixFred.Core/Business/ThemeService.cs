@@ -13,6 +13,8 @@ public static class ThemeService
 {
     public const string LightId = "thixfred-hell";
     public const string DarkId = "thixfred-dunkel";
+    public const string KanteId = "kante";
+    public const string KanteLightId = "kante-hell";
 
     private static readonly object Gate = new();
     private static List<LauncherTheme>? _custom;
@@ -61,6 +63,20 @@ public static class ThemeService
             Id = "kompakt", Name = "Kompakt", Author = "ThixFred", IsBuiltIn = true, Backdrop = ThemeBackdrop.Solid,
             Background = "#FFFFFFFF", Border = "#FFD9D9DE", Text = "#FF1D1D1F", MutedText = "#FF6E6E73", Selection = "#FFE8EFFD", Accent = "#FF2F6FED",
             CornerRadius = 8, FontSize = 18, Width = 600, Padding = 6,
+        },
+
+        // flat and square: no corners, no shadow, no glass; the chosen row is filled with the accent and written white on it
+        new()
+        {
+            Id = KanteId, Name = "Kante", Author = "ThixFred", IsBuiltIn = true, IsDark = true, Backdrop = ThemeBackdrop.Solid, Shadow = false,
+            Background = "#FF111111", Border = "#FF0050EF", Text = "#FFFFFFFF", MutedText = "#FF9E9E9E", Selection = "#FF0050EF", SelectionText = "#FFFFFFFF", Accent = "#FF2D7BFF",
+            CornerRadius = 0, FontSize = 26, Padding = 8,
+        },
+        new()
+        {
+            Id = KanteLightId, Name = "Kante Hell", Author = "ThixFred", IsBuiltIn = true, Backdrop = ThemeBackdrop.Solid, Shadow = false,
+            Background = "#FFFFFFFF", Border = "#FF0050EF", Text = "#FF000000", MutedText = "#FF5C5C5C", Selection = "#FF0050EF", SelectionText = "#FFFFFFFF", Accent = "#FF0050EF",
+            CornerRadius = 0, FontSize = 26, Padding = 8,
         },
     ];
 
@@ -284,6 +300,7 @@ public static class ThemeService
         }
     }
 
+    /// <summary>The colours to check; <see cref="LauncherTheme.SelectionText"/> only when it is set (empty = the text colour).</summary>
     private static IEnumerable<(string Field, string Value)> Colors(LauncherTheme theme) =>
     [
         (nameof(LauncherTheme.Background), theme.Background),
@@ -292,6 +309,7 @@ public static class ThemeService
         (nameof(LauncherTheme.MutedText), theme.MutedText),
         (nameof(LauncherTheme.Selection), theme.Selection),
         (nameof(LauncherTheme.Accent), theme.Accent),
+        .. theme.SelectionText.Length > 0 ? [(nameof(LauncherTheme.SelectionText), theme.SelectionText)] : Array.Empty<(string, string)>(),
     ];
 
     private static void CheckRange(double value, double minimum, double maximum, string field, string message)

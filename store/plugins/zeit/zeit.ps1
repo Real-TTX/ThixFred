@@ -1,4 +1,4 @@
-# A Unix time as a date, or now in several forms (ThixFred results, JSON); Enter copies.
+﻿# A Unix time as a date, or now in several forms (ThixFred results, JSON); Enter copies.
 param([string]$Query)
 
 $culture = [Globalization.CultureInfo]::GetCultureInfo('de-DE')

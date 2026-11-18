@@ -26,7 +26,7 @@ no image library (icons: the shell / sips + an own PNG writer). The desktop app 
   pages; `THIXFRED_SCREENSHOTS=<folder>` keeps screenshots – look at them). `TestData` isolates every test: own data folder,
   token store in memory, no policies, no icons, the sample program index, no process ends, nothing starts (`Shell.StartForTests`).
 - **Snapshots:** `dotnet run --project src/ThixFred -- --snapshot docs/images` draws every window headless (light and dark, 1x):
-  `launcher-{search,calc,terminal,kill,recent}`, `launcher-theme-<id>`, `main-{plugins,script,store,themes,theme-edit,websearches,
+  `launcher-{search,calc,terminal,console,kill,recent}`, `launcher-theme-<id>`, `main-{plugins,script,store,themes,theme-edit,websearches,
   settings,search,cloud,cloud-code,about}`, `setup-*` (Windows), `toast`, `tray-icon-{windows,macos}`. Temporary data folder with
   `SampleData` (programs without files, two scripts, a store plugin, a theme), pinned clock/version/computer, no icons, no
   network (`StoreService.ListingsForTests`), no real processes. A new window or page: add it to `Snapshot.cs` and look at the pictures.
@@ -51,7 +51,11 @@ src/ThixFred.Core       (no UI) models, business layer (static classes), infrast
                         LaunchOutcome, SystemCommand, AppCommand), LauncherTheme (+ ThemeBackdrop), WebSearch, Plugin.cs (PluginManifest,
                         PluginInfo, UserScript, StoreItem/Catalog/Listing, enums), Hotkey, BusinessException
   Business/             SearchService (THE search: keyword first – terminal ">", "kill", plugins, web search keywords –, then calculator,
-                        AppIndex, system and ThixFred commands, addresses, plugins by name, the web fallback; Rank adds usage),
+                        AppIndex, system and ThixFred commands, addresses, web searches by the start of their keyword ("w x"),
+                        the keyword of a store plugin not installed (from StoreService.KnownPlugins, memory only), plugins by
+                        name, the web fallback; Rank adds usage; a filter plugin shows "Wird abgefragt …" until it answers),
+                        IntegratedTerminal (the launcher's own terminal: one session, folder + output + history, cd/cls itself,
+                        input, Strg+C kills the tree; the shell is Platform/CommandShell: cmd with UTF-8 / zsh -l, no PTY),
                         LaunchService (runs a LaunchAction, records usage, the clipboard as a delegate), FuzzyMatcher, Calculator,
                         AppIndex (+ AppEntry: in memory, cache apps.json, background scan, watchers), IconService (icon PNG cache,
                         one STA worker), ProcessService (running apps, close / kill), TerminalService, UsageService (usage.json:
@@ -74,9 +78,11 @@ src/ThixFred            (Avalonia app)
   Program / App         start-up: ProblemReports, self test, snapshot, Windows setup mode, single instance, theme (accent #5B33F0),
                         AppIndex, launcher + settings window + tray, hotkey, sync, updates; RunCommand(AppCommand), ShowLauncher
   Launcher/             LauncherWindow (frameless, topmost, show/hide, ALL launcher keys, confirmation and message states, filter
-                        plugins debounced 120 ms, placement on the screen of the mouse; Solid = own rounded border + shadow on a
-                        transparent window, Acrylic/Mica = the system's glass), LauncherView (the themed content, pooled rows –
-                        also the preview of the theme editor), IconImages
+                        plugins debounced 120 ms, placement on the screen of the mouse, the terminal mode; its KIND is fixed when
+                        built: Acrylic/Mica = the system's glass, Shadowed = own rounded border + shadow on a transparent window,
+                        Flat = a plain window – a theme of another kind raises RebuildRequested and App builds a new launcher,
+                        because Windows does not turn a glass window into a plain one cleanly), LauncherView (the themed content,
+                        pooled rows, the terminal output – also the preview of the theme editor), IconImages
   MainWindow            the settings window: MatTitleBar ("Launcher öffnen", hotkey), MatNav (Plugins, Store, Themes, Websuchen;
                         Einstellungen; cloud state at the foot; version = About), page host with a back stack (OpenPage/GoBack, Esc)
   Pages/                PluginsPage + PluginEditPage + ScriptEditPage (tabs Allgemein | Skript | Testen), StorePage + StoreItemPage,

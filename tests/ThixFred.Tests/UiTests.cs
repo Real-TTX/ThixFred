@@ -110,10 +110,103 @@ public sealed class UiTests
         launcher.ShowLauncher(">ping heise.de");
         Settle(launcher);
         Save(launcher, "launcher-terminal");
-        launcher.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        launcher.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.Shift);
         Settle(launcher);
         Assert.Contains("ping heise.de", data.Started.Last().Arguments.Last());
         Close(launcher);
+    }
+
+    [AvaloniaFact]
+    public void The_integrated_terminal_shows_the_output_and_takes_the_next_command()
+    {
+        using var data = new TestData();
+        var launcher = OpenLauncher();
+        launcher.KeyTextInput(">ping heise.de");
+        Settle(launcher);
+        launcher.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Settle(launcher);
+        Assert.True(launcher.IsVisible);
+        Assert.True(launcher.IsInTerminal);
+        Assert.Equal(["ping heise.de"], data.TerminalCommands);
+        Assert.Contains("(Test) ping heise.de", launcher.View.TerminalText);
+        Assert.Equal(">", launcher.View.SearchBox.Text);
+        Save(launcher, "launcher-console");
+
+        // the next command in the same place; ↑ brings the last one back
+        launcher.KeyTextInput("echo zwei");
+        launcher.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Settle(launcher);
+        Assert.Equal(["ping heise.de", "echo zwei"], data.TerminalCommands);
+        Assert.Contains("(Test) echo zwei", launcher.View.TerminalText);
+        launcher.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None);
+        Settle(launcher);
+        Assert.Equal(">echo zwei", launcher.View.SearchBox.Text);
+
+        // typing something else is a search again; Esc from the terminal too
+        launcher.View.SearchBox.Text = "vis";
+        Settle(launcher);
+        Assert.False(launcher.IsInTerminal);
+        Assert.Contains(launcher.View.Results, result => result.Title == "Visual Studio Code");
+        launcher.View.SearchBox.Text = ">";
+        Settle(launcher);
+        launcher.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+        launcher.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Settle(launcher);
+        Assert.True(launcher.IsInTerminal);
+        launcher.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Settle(launcher);
+        Assert.False(launcher.IsInTerminal);
+        Assert.Equal("", launcher.View.SearchBox.Text);
+        Close(launcher);
+    }
+
+    [AvaloniaFact]
+    public void A_running_command_gets_the_typed_input_and_ctrl_c_ends_it()
+    {
+        using var data = new TestData();
+        IntegratedTerminal.RunForTests = async (_, _, write, cancel) =>
+        {
+            write("Name? ");
+            await Task.Delay(Timeout.Infinite, cancel);
+            return 0;
+        };
+        var launcher = OpenLauncher();
+        _ = launcher.RunInTerminalAsync("frag");
+        Settle(launcher);
+        Assert.True(IntegratedTerminal.IsRunning);
+        Assert.Equal("", launcher.View.SearchBox.Text);
+
+        launcher.KeyPressQwerty(PhysicalKey.C, RawInputModifiers.Control);
+        WaitUntil(launcher, () => !IntegratedTerminal.IsRunning);
+        Settle(launcher);
+        Assert.EndsWith("^C", launcher.View.TerminalText);
+        Assert.Equal(">", launcher.View.SearchBox.Text);
+        Close(launcher);
+    }
+
+    [AvaloniaFact]
+    public void A_theme_of_another_kind_of_window_asks_for_a_new_launcher()
+    {
+        using var data = new TestData();
+        var launcher = OpenLauncher();
+        var asked = 0;
+        launcher.RebuildRequested += (_, _) => asked++;
+        ThemeService.Use(ThemeService.KanteId);
+        Settle(launcher);
+        Assert.Equal(1, asked);
+        Close(launcher);
+
+        // a launcher built for the flat theme is content with it
+        var flat = OpenLauncher();
+        flat.RebuildRequested += (_, _) => asked++;
+        flat.KeyTextInput("vis");
+        Settle(flat);
+        Save(flat, "launcher-theme-kante");
+        ThemeService.Use(ThemeService.KanteLightId);
+        Settle(flat);
+        Assert.Equal(1, asked);
+        Close(flat);
+        ThemeService.Use(LauncherTheme.SystemId);
     }
 
     [AvaloniaFact]

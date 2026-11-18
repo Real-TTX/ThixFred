@@ -19,6 +19,7 @@ public static class StoreService
     private static readonly TimeSpan CatalogLifetime = TimeSpan.FromHours(1);
     private static readonly SemaphoreSlim InstallGate = new(1, 1);
     private static (DateTimeOffset At, string Url, StoreCatalog Catalog)? _catalog;
+    private static IReadOnlyList<StoreItem> _knownPlugins = [];
 
     /// <summary>Raised after something was installed, updated or removed.</summary>
     public static event EventHandler? Changed;
@@ -30,6 +31,22 @@ public static class StoreService
 
     /// <summary>Tests talk to a store in memory.</summary>
     internal static Func<HttpMessageHandler>? HandlerForTests { get; set; }
+
+    /// <summary>The plugins of the last catalog that was read (memory only: the search asks it on every key).</summary>
+    public static IReadOnlyList<StoreItem> KnownPlugins => _knownPlugins;
+
+    /// <summary>At start, in the background: the catalog (the store, else the cached file) so the search knows its keywords.</summary>
+    public static async Task WarmUpAsync()
+    {
+        try
+        {
+            await LoadAsync();
+        }
+        catch (BusinessException)
+        {
+            // no store (policy, offline): the search simply offers nothing to install
+        }
+    }
 
     /// <summary>Snapshots show a fixed catalog (no network).</summary>
     internal static Func<IReadOnlyList<StoreListing>>? ListingsForTests { get; set; }
@@ -178,9 +195,16 @@ public static class StoreService
     }
 
     /// <summary>Tests: no catalog in memory.</summary>
-    internal static void ResetForTests() => _catalog = null;
+    internal static void ResetForTests()
+    {
+        _catalog = null;
+        _knownPlugins = [];
+    }
 
-    private static bool IsSupported(StoreItem item)
+    /// <summary>Tests: the catalog the search knows.</summary>
+    internal static void SetKnownForTests(StoreCatalog catalog) => Remember(catalog);
+
+    public static bool IsSupported(StoreItem item)
     {
         if (item.Platforms.Count == 0)
         {
@@ -206,6 +230,7 @@ public static class StoreService
             var catalog = await http.GetFromJsonAsync<StoreCatalog>(url, JsonFile.Options, cancellationToken) ?? new StoreCatalog();
             _catalog = (AppClock.UtcNow, url, catalog);
             JsonFile.Write(cacheFile, catalog);
+            Remember(catalog);
             return catalog;
         }
         catch (Exception exception) when (exception is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException or NotSupportedException or InvalidOperationException)
@@ -213,12 +238,16 @@ public static class StoreService
             Log.Warning($"Store: the catalog could not be loaded ({exception.Message})");
             if (!refresh && JsonFile.Read<StoreCatalog>(cacheFile) is { } offline)
             {
+                Remember(offline);
                 return offline;
             }
 
             throw new BusinessException("Der Store ist gerade nicht erreichbar. Bitte später noch einmal versuchen.");
         }
     }
+
+    private static void Remember(StoreCatalog catalog) =>
+        _knownPlugins = catalog.Items.Where(item => item.Kind == StoreItemKind.Plugin && Slug.IsValid(item.Id) && item.Keyword.Length > 0).ToList();
 
     private static async Task<byte[]> DownloadAsync(StoreItem item, CancellationToken cancellationToken)
     {

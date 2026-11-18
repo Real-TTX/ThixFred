@@ -75,6 +75,7 @@ public partial class SettingsPage : UserControl
                 SettingsService.Update(settings => settings with { DefaultWebSearchId = _searchIds[DefaultSearchChoice.SelectedIndex] });
             }
         });
+        IntegratedTerminalSwitch.IsCheckedChanged += (_, _) => Apply(() => SettingsService.Update(settings => settings with { IntegratedTerminal = IntegratedTerminalSwitch.IsChecked == true }));
         TerminalChoiceBox.SelectionChanged += (_, _) => Apply(() => SettingsService.Update(settings => settings with { Terminal = TerminalService.Choices[Math.Max(0, TerminalChoiceBox.SelectedIndex)] }));
         StoreAppsSwitch.IsCheckedChanged += (_, _) => Apply(() =>
         {
@@ -135,11 +136,12 @@ public partial class SettingsPage : UserControl
             _searchIds = searches.Select(search => search.Id).ToList();
             DefaultSearchChoice.ItemsSource = searches.Select(search => search.Name).ToList();
             DefaultSearchChoice.SelectedIndex = _searchIds.IndexOf(settings.DefaultWebSearchId);
+            IntegratedTerminalSwitch.IsChecked = settings.IntegratedTerminal;
             TerminalChoiceBox.SelectedIndex = Math.Max(0, TerminalService.Choices.ToList().IndexOf(settings.Terminal));
             StoreAppsSwitch.IsChecked = settings.IncludeStoreApps;
             LoadFolders(settings, locked);
             LoadIndex();
-            foreach (var control in new Control[] { HideSwitch, KeepQuerySwitch, ThemeChoice, LauncherThemeChoice, MaxResultsBox, LearnSwitch, ForgetButton, WebFallbackSwitch, DefaultSearchChoice, TerminalChoiceBox, StoreAppsSwitch, CheckUpdatesSwitch, AutoInstallSwitch, StoreUrlBox, StoreUrlSaveButton })
+            foreach (var control in new Control[] { HideSwitch, KeepQuerySwitch, ThemeChoice, LauncherThemeChoice, MaxResultsBox, LearnSwitch, ForgetButton, WebFallbackSwitch, DefaultSearchChoice, IntegratedTerminalSwitch, TerminalChoiceBox, StoreAppsSwitch, CheckUpdatesSwitch, AutoInstallSwitch, StoreUrlBox, StoreUrlSaveButton })
             {
                 control.IsEnabled = !locked;
             }

@@ -128,6 +128,16 @@ internal static class SelfTest
             });
         }
 
+        await Check("integrated terminal (shell)", async () =>
+        {
+            IntegratedTerminal.UseWorkingDirectoryForTests(AppPaths.DataDirectory);
+            await IntegratedTerminal.RunAsync("echo Grüße");
+            Ensure(IntegratedTerminal.LastExitCode == 0 && IntegratedTerminal.Output.Contains("\nGrüße", StringComparison.Ordinal),
+                $"output \"{IntegratedTerminal.Output.Trim()}\" (exit {IntegratedTerminal.LastExitCode})");
+            IntegratedTerminal.Clear();
+            return "";
+        });
+
         await Check("windows and bindings", async () =>
         {
             var launcher = new Launcher.LauncherWindow();

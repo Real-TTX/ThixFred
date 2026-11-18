@@ -47,6 +47,12 @@ public sealed record LauncherTheme
     /// <summary>The title of the chosen row, the caret, the badges.</summary>
     public string Accent { get; init; } = "#FF2F6FED";
 
+    /// <summary>The texts of the chosen row; empty = <see cref="Text"/> (a flat theme fills the row with its accent and writes white on it).</summary>
+    public string SelectionText { get; init; } = "";
+
+    /// <summary>The shadow around the window (deckend only: glass casts the system's shadow). Flat themes have none.</summary>
+    public bool Shadow { get; init; } = true;
+
     /// <summary>Corners of the window (px).</summary>
     public double CornerRadius { get; init; } = 14;
 

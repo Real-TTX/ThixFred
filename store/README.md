@@ -43,8 +43,9 @@ Skript erneut mit `arg`, `query` ersetzt die Suche durch `arg`.
 ## Ein Theme
 
 Eine Datei `themes/<id>.json` mit den Feldern eines Themes (`name`, `isDark`, `backdrop` Solid | Acrylic | Mica,
-`background`, `border`, `text`, `mutedText`, `selection`, `accent` als `#RRGGBB` / `#AARRGGBB`, `cornerRadius`, `fontSize`,
-`width`, `padding`) und für den Store `version`, `author`, `description`.
+`background`, `border`, `text`, `mutedText`, `selection`, `accent` als `#RRGGBB` / `#AARRGGBB`, optional `selectionText`
+(der Text der gewählten Zeile, leer = `text`), `shadow` (true/false, nur deckend), `cornerRadius`, `fontSize`, `width`,
+`padding`) und für den Store `version`, `author`, `description`.
 
 ## Ein eigener Store
 

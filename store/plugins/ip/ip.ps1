@@ -1,12 +1,26 @@
-# The public IPv4 address and the local ones as ThixFred results (JSON); Enter copies.
+﻿# The local IPv4 addresses and the public one as ThixFred results (JSON); Enter copies.
+# .NET instead of Get-NetIPAddress (which loads CIM and takes a second or more); TLS 1.2 for Windows PowerShell 5.1.
 $items = @()
+foreach ($interface in [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces()) {
+  if ($interface.OperationalStatus -ne 'Up' -or $interface.NetworkInterfaceType -eq 'Loopback') { continue }
+  foreach ($address in $interface.GetIPProperties().UnicastAddresses) {
+    if ($address.Address.AddressFamily -eq 'InterNetwork') {
+      $ip = $address.Address.ToString()
+      $items += @{ title = $ip; subtitle = "Lokal · $($interface.Name)"; arg = $ip; action = 'copy' }
+    }
+  }
+}
+
 try {
-  $public = (Invoke-RestMethod -Uri 'https://api.ipify.org?format=json' -TimeoutSec 4).ip
-  $items += @{ title = $public; subtitle = 'Öffentlich (api.ipify.org)'; arg = $public; action = 'copy' }
+  [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+  $request = [Net.WebRequest]::Create('https://api.ipify.org')
+  $request.Timeout = 3000
+  $response = $request.GetResponse()
+  $public = (New-Object IO.StreamReader($response.GetResponseStream())).ReadToEnd().Trim()
+  $response.Close()
+  $items = @(@{ title = $public; subtitle = 'Öffentlich (api.ipify.org)'; arg = $public; action = 'copy' }) + $items
 } catch {
   $items += @{ title = 'Öffentliche IP nicht erreichbar'; subtitle = 'Keine Verbindung zu api.ipify.org' }
 }
-Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
-  Where-Object { $_.IPAddress -ne '127.0.0.1' -and $_.PrefixOrigin -ne 'WellKnown' } |
-  ForEach-Object { $items += @{ title = $_.IPAddress; subtitle = "Lokal · $($_.InterfaceAlias)"; arg = $_.IPAddress; action = 'copy' } }
+
 @{ items = $items } | ConvertTo-Json -Depth 4 -Compress

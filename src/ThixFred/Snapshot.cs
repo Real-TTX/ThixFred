@@ -41,13 +41,13 @@ internal static class Snapshot
     private static readonly string[] ThemedPictures =
     [
         "setup-welcome", "setup-options", "setup-progress", "setup-finish", "setup-update", "setup-uninstall",
-        "launcher-search", "launcher-calc", "launcher-terminal", "launcher-kill", "launcher-recent",
+        "launcher-search", "launcher-calc", "launcher-terminal", "launcher-console", "launcher-kill", "launcher-recent",
         "main-plugins", "main-script", "main-store", "main-themes", "main-theme-edit", "main-websearches", "main-settings", "main-search",
         "main-cloud", "main-cloud-code", "main-about", "toast",
     ];
 
     /// <summary>The other built-in themes, drawn once each.</summary>
-    private static readonly string[] ThemeNames = ["graphit", "ozean", "mitternacht", "sand", "kompakt"];
+    private static readonly string[] ThemeNames = ["graphit", "ozean", "mitternacht", "sand", "kompakt", "kante", "kante-hell"];
 
     /// <summary>Every file a snapshot writes (the tray icons are the same in both themes).</summary>
     public static IReadOnlyList<string> FileNames { get; } =
@@ -206,10 +206,40 @@ internal static class Snapshot
             Save(launcher, folder, $"launcher-{name}-{theme}.png", report);
         }
 
+        // the integrated terminal after a command: the output is made up, no process runs
+        IntegratedTerminal.ResetForTests();
+        IntegratedTerminal.UseWorkingDirectoryForTests(OperatingSystem.IsWindows() ? @"C:\Users\Anna" : "/Users/anna/Projekte");
+        IntegratedTerminal.RunForTests = (_, _, write, _) =>
+        {
+            write(PingOutput);
+            return Task.FromResult(0);
+        };
+        launcher.ShowLauncher(">");
+        _ = launcher.RunInTerminalAsync("ping heise.de");
+        Settle(launcher, waitLonger: true);
+        Save(launcher, folder, $"launcher-console-{theme}.png", report);
+        IntegratedTerminal.ResetForTests();
+
         launcher.IsExiting = true;
         launcher.Close();
         SettingsService.Update(settings => settings with { LauncherThemeId = LauncherTheme.SystemId });
     }
+
+    private const string PingOutput = """
+
+        Ping wird ausgeführt für heise.de [193.99.144.80] mit 32 Bytes Daten:
+        Antwort von 193.99.144.80: Bytes=32 Zeit=12ms TTL=246
+        Antwort von 193.99.144.80: Bytes=32 Zeit=11ms TTL=246
+        Antwort von 193.99.144.80: Bytes=32 Zeit=12ms TTL=246
+        Antwort von 193.99.144.80: Bytes=32 Zeit=13ms TTL=246
+
+        Ping-Statistik für 193.99.144.80:
+            Pakete: Gesendet = 4, Empfangen = 4, Verloren = 0
+            (0% Verlust),
+        Ca. Zeitangaben in Millisek.:
+            Minimum = 11ms, Maximum = 13ms, Mittelwert = 12ms
+
+        """;
 
     /// <summary>The other themes of the launcher, each with the search for "vis" (light pictures only: a theme has its own colours).</summary>
     private static void RenderLauncherThemes(string folder, SnapshotReport report)

@@ -38,6 +38,14 @@ internal sealed class TestData : IDisposable
         UsageService.ResetForTests();
         WebSearchService.ResetForTests();
         ThemeService.ResetForTests();
+        IntegratedTerminal.ResetForTests();
+        IntegratedTerminal.RunForTests = (command, _, write, _) =>
+        {
+            TerminalCommands.Add(command);
+            write($"(Test) {command}\n");
+            return Task.FromResult(0);
+        };
+        StoreService.ResetForTests();
         PluginService.Invalidate();
         LaunchService.Clipboard = text =>
         {
@@ -69,6 +77,9 @@ internal sealed class TestData : IDisposable
     /// <summary>What went into the clipboard last.</summary>
     public string? Clipboard { get; private set; }
 
+    /// <summary>The commands the integrated terminal ran (no shell runs in a test unless it asks for one).</summary>
+    public List<string> TerminalCommands { get; } = [];
+
     public void Dispose()
     {
         SyncService.Stop();
@@ -78,6 +89,7 @@ internal sealed class TestData : IDisposable
         StoreService.ListingsForTests = null;
         ScriptRunner.RunForTests = null;
         Shell.StartForTests = null;
+        IntegratedTerminal.ResetForTests();
         ProcessService.ListForTests = null;
         ProcessService.EndForTests = null;
         AppIndex.ScannerForTests = null;

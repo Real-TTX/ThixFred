@@ -123,9 +123,12 @@ public sealed class PluginTests
         var match = SearchService.FilterPlugin("uuid 4")!.Value;
         Assert.Equal("uuid", match.Plugin.Id);
         Assert.Equal("4", match.Argument);
-        Assert.Empty(SearchService.Search("uuid 4", 8)); // the launcher asks the script
+        // the launcher asks the script; until it answers one row says so
+        Assert.Equal("Wird abgefragt …", Assert.Single(SearchService.Search("uuid 4", 8)).Subtitle);
         var results = (await PluginService.FilterAsync(match.Plugin.Id, match.Argument, CancellationToken.None));
         Assert.Equal(["4-1", "4-2"], results.Select(result => result.Title));
+        Assert.Equal(["4-1", "4-2"], SearchService.FilterResults(match.Plugin, "uuid 4", results, 8).Select(result => result.Title));
+        Assert.Equal("Keine Ergebnisse", Assert.Single(SearchService.FilterResults(match.Plugin, "uuid 4", [], 8)).Subtitle);
     }
 
     [Fact]
@@ -179,6 +182,46 @@ public sealed class PluginTests
         StoreService.Uninstall("nordlicht");
         Assert.Null(PluginService.Find("wetter"));
         Assert.Null(ThemeService.Find("nordlicht"));
+    }
+
+    [Fact]
+    public async Task Enter_on_the_store_hint_installs_the_plugin_and_searches_again()
+    {
+        using var data = new TestData();
+        var store = new FakeStore();
+        StoreService.HandlerForTests = () => store;
+        StoreService.ListingsForTests = null;
+        SettingsService.Update(settings => settings with { StoreUrl = "https://store.example.com/store.json" });
+        store.AddPlugin("wetter", "1.0.0", "wetter", ("plugin.json", Manifest("wetter", "1.0.0")), ("wetter.ps1", "'Sonne'"));
+        await StoreService.WarmUpAsync();
+
+        var install = SearchService.Search("wetter", 8)[0];
+        Assert.Equal("store:wetter", install.Id);
+        var outcome = await LaunchService.ExecuteAsync(install, install.Action, "wetter");
+        Assert.Equal((LaunchOutcomeKind.SetQuery, "wetter"), (outcome.Kind, outcome.Query));
+        Assert.Equal(PluginSource.Store, PluginService.Find("wetter")!.Source);
+        Assert.Equal("plugin:wetter", SearchService.Search("wetter", 8)[0].Id);
+    }
+
+    [Fact]
+    public void The_flat_themes_are_valid_and_a_selection_text_is_checked()
+    {
+        using var data = new TestData();
+        foreach (var theme in ThemeService.BuiltIn)
+        {
+            Assert.All(new[] { theme.Background, theme.Border, theme.Text, theme.MutedText, theme.Selection, theme.Accent }, color => Assert.True(ThemeService.IsColor(color), theme.Id));
+            Assert.True(theme.SelectionText.Length == 0 || ThemeService.IsColor(theme.SelectionText), theme.Id);
+        }
+
+        var kante = ThemeService.Find(ThemeService.KanteId)!;
+        Assert.Equal((0d, false, ThemeBackdrop.Solid), (kante.CornerRadius, kante.Shadow, kante.Backdrop));
+        Assert.NotNull(ThemeService.Find(ThemeService.KanteLightId));
+
+        var copy = ThemeService.Duplicate(ThemeService.KanteId);
+        Assert.Equal(("#FFFFFFFF", false), (copy.SelectionText, copy.Shadow));
+        var error = Assert.Throws<BusinessException>(() => ThemeService.Save(copy with { SelectionText = "weiß" }));
+        Assert.Equal(nameof(LauncherTheme.SelectionText), error.Field);
+        Assert.Equal("", ThemeService.Save(copy with { SelectionText = "" }).SelectionText);
     }
 
     [Fact]

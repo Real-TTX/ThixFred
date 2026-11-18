@@ -115,14 +115,31 @@ public static partial class SearchService
                 });
             }
 
+            // "w alfred": the first word begins a keyword ("wiki") – that search with the rest, high above the fallback
+            var space = text.IndexOf(' ');
+            var terms = space > 0 ? text[(space + 1)..].Trim() : "";
             foreach (var search in WebSearchService.List().Where(search => search.IsEnabled))
             {
-                var score = FuzzyMatcher.Score(prepared, FuzzyMatcher.Prepare(search.Keyword)) is 100 ? 60 : 0;
+                if (terms.Length > 0 && search.Keyword.Length > space && search.Keyword.StartsWith(text[..space], StringComparison.OrdinalIgnoreCase))
+                {
+                    results.Add(WebSearchResult(search, terms, 700));
+                    continue;
+                }
+
+                // "wiki" or "wi": the search is offered, Enter fills in its keyword
+                var score = space < 0 && search.Keyword.Equals(text, StringComparison.OrdinalIgnoreCase) ? 60
+                    : space < 0 && search.Keyword.StartsWith(text, StringComparison.OrdinalIgnoreCase) ? 45 : 0;
                 if (score > 0)
                 {
                     results.Add(WebSearchHint(search, score * 6));
                 }
             }
+        }
+
+        // the keyword of a plugin of the store that is not installed ("ip"): Enter installs it
+        if (StoreHint(text) is { } storeHint)
+        {
+            results.Add(storeHint);
         }
 
         // plugins and scripts by their name: Enter fills in their keyword
@@ -158,9 +175,35 @@ public static partial class SearchService
         return Rank(results, prepared, max);
     }
 
+    /// <summary>">ping heise.de" → "ping heise.de", ">" → ""; null when the query is no terminal command (or the terminal is off).</summary>
+    public static string? TerminalCommand(string query)
+    {
+        var text = query.TrimStart();
+        var terminal = PluginService.Find(PluginService.TerminalId);
+        if (terminal is not { IsEnabled: true } || terminal.Keyword.Length == 0 || !text.StartsWith(terminal.Keyword, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return IsSymbol(terminal.Keyword) || text.Length == terminal.Keyword.Length || text[terminal.Keyword.Length] == ' '
+            ? text[terminal.Keyword.Length..].Trim()
+            : null;
+    }
+
+    /// <summary>What a terminal command starts with: ">" (a sign is glued to the command) or "t " (a word).</summary>
+    public static string TerminalPrefix()
+    {
+        var keyword = PluginService.KeywordOf(PluginService.TerminalId);
+        return IsSymbol(keyword) ? keyword : keyword + " ";
+    }
+
     /// <summary>A filter plugin that answers this query (its keyword starts it), and the text after the keyword.</summary>
     public static (PluginInfo Plugin, string Argument)? FilterPlugin(string query) =>
         PluginService.MatchKeyword(query.TrimStart()) is { Plugin.Mode: PluginMode.Filter } match ? match : null;
+
+    /// <summary>The answer of a filter plugin as the launcher shows it: ranked, or one row "Keine Ergebnisse".</summary>
+    public static IReadOnlyList<SearchResult> FilterResults(PluginInfo plugin, string query, IReadOnlyList<SearchResult> results, int max) =>
+        results.Count > 0 ? Rank(results, FuzzyMatcher.Prepare(query), max) : [FilterPlaceholder(plugin, query, isAsking: false)];
 
     /// <summary>Usage counts on top of the provider's score; fallbacks stay last.</summary>
     internal static IReadOnlyList<SearchResult> Rank(IEnumerable<SearchResult> results, string prepared, int max) =>
@@ -208,11 +251,9 @@ public static partial class SearchService
         var lower = text.ToLowerInvariant();
 
         // ">ping heise.de" (the keyword of the terminal, ">" by default, may be glued to the command)
-        var terminal = PluginService.Find(PluginService.TerminalId);
-        if (terminal is { IsEnabled: true } && terminal.Keyword.Length > 0 && lower.StartsWith(terminal.Keyword, StringComparison.Ordinal) &&
-            (IsSymbol(terminal.Keyword) || text.Length == terminal.Keyword.Length || text[terminal.Keyword.Length] == ' '))
+        if (TerminalCommand(text) is { } command)
         {
-            return TerminalResults(text[terminal.Keyword.Length..].Trim());
+            return TerminalResults(command);
         }
 
         // "kill word"
@@ -233,7 +274,7 @@ public static partial class SearchService
         {
             if (match.Plugin.Mode == PluginMode.Filter)
             {
-                return []; // the launcher asks the script (FilterPlugin)
+                return [FilterPlaceholder(match.Plugin, query, isAsking: true)]; // the launcher asks the script (FilterPlugin)
             }
 
             return
@@ -269,6 +310,17 @@ public static partial class SearchService
 
     private static List<SearchResult> TerminalResults(string command)
     {
+        var settings = SettingsService.Get();
+        var terminal = TerminalService.DisplayName(settings.Terminal);
+
+        // integrated: Enter runs it in the launcher, Umschalt+Enter in the terminal window; else Enter there, Umschalt+Enter elevated
+        LaunchAction Run(string text) => settings.IntegratedTerminal
+            ? new LaunchAction("Ausführen", LaunchActionKind.IntegratedTerminal, text)
+            : new LaunchAction("Im Terminal ausführen", LaunchActionKind.Terminal, text);
+        LaunchAction? Second(string text) => settings.IntegratedTerminal
+            ? new LaunchAction("Im Terminal öffnen", LaunchActionKind.Terminal, text)
+            : OperatingSystem.IsWindows() ? new LaunchAction("Als Administrator ausführen", LaunchActionKind.Terminal, text, "admin") : null;
+
         if (command.Length == 0)
         {
             var recent = UsageService.RecentCommands().Take(8).Select((previous, index) => new SearchResult
@@ -278,9 +330,9 @@ public static partial class SearchService
                 Subtitle = "Zuletzt ausgeführt · Enter führt erneut aus · Tab übernimmt",
                 Kind = ResultKind.Terminal,
                 Icon = ResultIcon.Of("terminal"),
-                Action = new LaunchAction("Im Terminal ausführen", LaunchActionKind.Terminal, previous),
-                AlternateAction = OperatingSystem.IsWindows() ? new LaunchAction("Als Administrator ausführen", LaunchActionKind.Terminal, previous, "admin") : null,
-                Autocomplete = ">" + previous,
+                Action = Run(previous),
+                AlternateAction = Second(previous),
+                Autocomplete = TerminalPrefix() + previous,
                 Score = 900 - index,
             }).ToList();
             if (recent.Count > 0)
@@ -303,18 +355,19 @@ public static partial class SearchService
             ];
         }
 
-        var terminal = TerminalService.DisplayName(SettingsService.Get().Terminal);
         return
         [
             new SearchResult
             {
                 Id = $"terminal:{command}",
                 Title = command,
-                Subtitle = $"Im Terminal ausführen ({terminal})" + (OperatingSystem.IsWindows() ? " · Umschalt+Enter als Administrator" : ""),
+                Subtitle = settings.IntegratedTerminal
+                    ? "Hier im Launcher ausführen · Umschalt+Enter im Terminal-Fenster"
+                    : $"Im Terminal ausführen ({terminal})" + (OperatingSystem.IsWindows() ? " · Umschalt+Enter als Administrator" : ""),
                 Kind = ResultKind.Terminal,
                 Icon = ResultIcon.Of("terminal"),
-                Action = new LaunchAction("Im Terminal ausführen", LaunchActionKind.Terminal, command),
-                AlternateAction = OperatingSystem.IsWindows() ? new LaunchAction("Als Administrator ausführen", LaunchActionKind.Terminal, command, "admin") : null,
+                Action = Run(command),
+                AlternateAction = Second(command),
                 Score = 1000,
             },
         ];
@@ -387,6 +440,37 @@ public static partial class SearchService
         }
 
         return results;
+    }
+
+    /// <summary>A row for a filter plugin while it is asked ("Wird abgefragt …") or when it found nothing; Enter asks again.</summary>
+    private static SearchResult FilterPlaceholder(PluginInfo plugin, string query, bool isAsking) => new()
+    {
+        Id = $"plugin:{plugin.Id}",
+        Title = plugin.Name,
+        Subtitle = isAsking ? "Wird abgefragt …" : "Keine Ergebnisse",
+        Kind = ResultKind.Plugin,
+        Icon = ResultIcon.Of(plugin.Icon),
+        Action = new LaunchAction("Erneut abfragen", LaunchActionKind.SetQuery, query),
+        Score = 1000,
+    };
+
+    /// <summary>A store plugin whose keyword is the first word and that is not installed (from the catalog in memory: no network here).</summary>
+    private static SearchResult? StoreHint(string text)
+    {
+        var space = text.IndexOf(' ');
+        var word = space > 0 ? text[..space] : text;
+        var item = StoreService.KnownPlugins.FirstOrDefault(item =>
+            item.Keyword.Equals(word, StringComparison.OrdinalIgnoreCase) && PluginService.Find(item.Id) is null && StoreService.IsSupported(item));
+        return item is null ? null : new SearchResult
+        {
+            Id = $"store:{item.Id}",
+            Title = $"{item.Name} aus dem Store installieren",
+            Subtitle = item.Description.Length > 0 ? $"Plugin „{item.Keyword}“ · {item.Description}" : $"Plugin mit dem Schlüsselwort „{item.Keyword}“",
+            Kind = ResultKind.Plugin,
+            Icon = ResultIcon.Of("download"),
+            Action = new LaunchAction("Installieren", LaunchActionKind.StoreInstall, item.Id, text),
+            Score = 950,
+        };
     }
 
     private static int MatchScore(string prepared, string name, string keywords)

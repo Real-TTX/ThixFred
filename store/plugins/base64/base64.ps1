@@ -1,4 +1,4 @@
-# The text in Base64 and, when it is Base64, decoded (ThixFred results, JSON); Enter copies.
+﻿# The text in Base64 and, when it is Base64, decoded (ThixFred results, JSON); Enter copies.
 param([string]$Query)
 
 if ($Query.Length -eq 0) {

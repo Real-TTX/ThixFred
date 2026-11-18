@@ -74,7 +74,7 @@ public sealed class ThemesPage : UserControl, IRefreshable, ISearchable
             badges.Insert(0, "in Verwendung");
         }
 
-        var subtitle = $"{theme.Backdrop switch { ThemeBackdrop.Acrylic => "Glas (Acryl)", ThemeBackdrop.Mica => "Glas (Mica)", _ => "Deckend" }} · Schrift {theme.FontSize:0} px · Breite {theme.Width:0} px"
+        var subtitle = $"{theme.Backdrop switch { ThemeBackdrop.Acrylic => "Glas (Acryl)", ThemeBackdrop.Mica => "Glas (Mica)", _ when !theme.Shadow && theme.CornerRadius == 0 => "Flach und eckig", _ => "Deckend" }} · Schrift {theme.FontSize:0} px · Breite {theme.Width:0} px"
                        + (theme.Author.Length > 0 && !theme.IsBuiltIn ? $" · {theme.Author}" : "");
         return new EntityRow(theme.Id, "palette", theme.Name, subtitle)
         {
@@ -155,6 +155,7 @@ public sealed class ThemeEditPage : UserControl
     private readonly NumericUpDown _width = Number(480, 1200, 10);
     private readonly NumericUpDown _padding = Number(0, 32, 1);
     private readonly ToggleSwitch _dark;
+    private readonly ToggleSwitch _shadow;
 
     public ThemeEditPage(MainWindow window, LauncherTheme theme)
     {
@@ -173,6 +174,7 @@ public sealed class ThemeEditPage : UserControl
         _width.Value = (decimal)theme.Width;
         _padding.Value = (decimal)theme.Padding;
         _dark = Ui.Switch("Dunkles Theme", theme.IsDark, _ => Preview());
+        _shadow = Ui.Switch("Schatten", theme.Shadow, _ => Preview());
 
         var colorGrid = new Avalonia.Controls.Primitives.UniformGrid { Columns = 2, MaxWidth = 560, HorizontalAlignment = HorizontalAlignment.Left };
         var colors = new StackPanel { MaxWidth = 560, HorizontalAlignment = HorizontalAlignment.Left };
@@ -191,6 +193,7 @@ public sealed class ThemeEditPage : UserControl
                      (nameof(LauncherTheme.Accent), "Akzent", theme.Accent),
                      (nameof(LauncherTheme.Selection), "Auswahl", theme.Selection),
                      (nameof(LauncherTheme.Border), "Rand", theme.Border),
+                     (nameof(LauncherTheme.SelectionText), "Text der Auswahl (leer: wie Text)", theme.SelectionText),
                  })
         {
             colorGrid.Children.Add(ColorField(field, label, value));
@@ -202,6 +205,7 @@ public sealed class ThemeEditPage : UserControl
         form.Children.Add(Ui.Field("Schriftgröße der Suche (px)", _fontSize, nameof(LauncherTheme.FontSize)));
         form.Children.Add(Ui.Field("Breite (px)", _width, nameof(LauncherTheme.Width)));
         form.Children.Add(Ui.Field("Innenabstand (px)", _padding, nameof(LauncherTheme.Padding)));
+        form.Children.Add(Ui.Row("Schatten", "Nur bei deckendem Hintergrund (Glas wirft den des Systems). Flache, eckige Themes wie „Kante“ haben keinen.", _shadow));
         form.Children.Add(Ui.Row("Dunkles Theme", "Bildlaufleisten und Tooltips dunkel.", _dark, last: true));
 
         _layout.AddTab("Farben", colors);
@@ -212,6 +216,7 @@ public sealed class ThemeEditPage : UserControl
         }
 
         _dark.IsEnabled = !theme.IsBuiltIn;
+        _shadow.IsEnabled = !theme.IsBuiltIn;
         _backdrop.SelectionChanged += (_, _) => Preview();
         foreach (var number in new[] { _radius, _fontSize, _width, _padding })
         {
@@ -275,6 +280,8 @@ public sealed class ThemeEditPage : UserControl
         Accent = _colors[nameof(LauncherTheme.Accent)].Text ?? "",
         Selection = _colors[nameof(LauncherTheme.Selection)].Text ?? "",
         Border = _colors[nameof(LauncherTheme.Border)].Text ?? "",
+        SelectionText = (_colors[nameof(LauncherTheme.SelectionText)].Text ?? "").Trim(),
+        Shadow = _shadow.IsChecked == true,
         Backdrop = Backdrops[Math.Max(0, _backdrop.SelectedIndex)],
         CornerRadius = (double)(_radius.Value ?? 0),
         FontSize = (double)(_fontSize.Value ?? 24),
@@ -305,13 +312,14 @@ public sealed class ThemeEditPage : UserControl
 
     private void Preview()
     {
-        if (_colors.Count < 6)
+        if (_colors.Count < 7)
         {
             return;
         }
 
         var current = Current;
-        if (new[] { current.Background, current.Text, current.MutedText, current.Accent, current.Selection, current.Border }.All(ThemeService.IsColor))
+        if (new[] { current.Background, current.Text, current.MutedText, current.Accent, current.Selection, current.Border }.All(ThemeService.IsColor) &&
+            (current.SelectionText.Length == 0 || ThemeService.IsColor(current.SelectionText)))
         {
             // the glass is not shown in the preview: the background as the system would tint it, without the shadow
             _preview.ApplyTheme(current with { Background = current.Background.Length == 9 && current.Backdrop != ThemeBackdrop.Solid ? "#FF" + current.Background[3..] : current.Background });

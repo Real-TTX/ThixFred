@@ -80,6 +80,20 @@ public static class LaunchService
                 TerminalService.Run(action.Target, asAdministrator: action.Argument == "admin");
                 return LaunchOutcome.Done;
 
+            case LaunchActionKind.IntegratedTerminal:
+                if (action.Target.Trim().Length == 0)
+                {
+                    throw new BusinessException("Bitte einen Befehl nach „>“ eingeben, z. B. >ping heise.de");
+                }
+
+                return new LaunchOutcome(LaunchOutcomeKind.Terminal, Query: action.Target.Trim());
+
+            case LaunchActionKind.StoreInstall:
+                var listing = (await StoreService.LoadAsync()).FirstOrDefault(listing => listing.Item.Id == action.Target)
+                    ?? throw new BusinessException("Dieses Plugin gibt es im Store nicht (mehr).");
+                await StoreService.InstallAsync(listing.Item);
+                return new LaunchOutcome(LaunchOutcomeKind.SetQuery, Query: action.Argument ?? listing.Item.Keyword);
+
             case LaunchActionKind.CloseProcess or LaunchActionKind.KillProcess:
                 ProcessService.End(int.Parse(action.Target), force: action.Kind == LaunchActionKind.KillProcess);
                 return LaunchOutcome.Done;

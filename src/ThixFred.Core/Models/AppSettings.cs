@@ -44,7 +44,10 @@ public sealed record AppSettings
     /// <summary>Results that were chosen often for what was typed come first (learned on this computer).</summary>
     public bool LearnFromUsage { get; init; } = true;
 
-    /// <summary>Where "&gt;command" runs.</summary>
+    /// <summary>"&gt;command" runs in the launcher itself (the output shows below the search); Umschalt+Enter opens <see cref="Terminal"/>.</summary>
+    public bool IntegratedTerminal { get; init; } = true;
+
+    /// <summary>The terminal window for "&gt;command" (Umschalt+Enter, or Enter without <see cref="IntegratedTerminal"/>).</summary>
     public TerminalChoice Terminal { get; init; } = TerminalChoice.Automatic;
 
     /// <summary>"Im Web suchen" is offered below the results for every search.</summary>

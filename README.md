@@ -8,7 +8,7 @@ die **ThixCloud** (MatCloud), damit ThixFred auf allen deinen Computern gleich e
 
 | Programme | Rechnen | Terminal | Programme beenden |
 |---|---|---|---|
-| ![Suche](docs/images/launcher-search-light.png) | ![Rechner](docs/images/launcher-calc-dark.png) | ![Terminal](docs/images/launcher-terminal-light.png) | ![Beenden](docs/images/launcher-kill-light.png) |
+| ![Suche](docs/images/launcher-search-light.png) | ![Rechner](docs/images/launcher-calc-dark.png) | ![Terminal](docs/images/launcher-console-dark.png) | ![Beenden](docs/images/launcher-kill-light.png) |
 
 - **Schnell wie nichts**: das Fenster wird beim Start einmal gebaut und danach nur gezeigt; der Programmindex liegt im
   Speicher (beim Start sofort aus dem Cache, im Hintergrund neu eingelesen) – die Suche läuft bei jedem Tastendruck ohne
@@ -19,16 +19,20 @@ die **ThixCloud** (MatCloud), damit ThixFred auf allen deinen Computern gleich e
 - **Lernt mit**: Was du für dieselben Buchstaben gewählt hast, kommt zuerst; ein leeres Suchfeld zeigt das zuletzt Genutzte.
 - **Programme beenden**: `kill word` (auch `beenden …`, `quit …`) – Enter schließt, Umschalt+Enter beendet sofort (nach Rückfrage).
 - **Rechnen**: `3,5 * (2 + 1)^2`, `sqrt(2)`, `200 + 15%`, `0xff`, `5!`, `max(1; 7)` – Enter kopiert das Ergebnis.
-- **Terminal**: `>ping heise.de` läuft in Windows Terminal / PowerShell / cmd bzw. Terminal / iTerm und bleibt offen;
-  `>` allein zeigt die letzten Befehle, Umschalt+Enter (Windows) als Administrator.
-- **Web**: `heise.de` öffnet die Adresse, `g …`, `wiki …`, `yt …` suchen mit Schlüsselwort (eigene Websuchen anlegen),
-  „Im Web suchen“ steht unter jeder Suche.
+- **Integriertes Terminal**: `>ping heise.de` läuft direkt im Launcher, die Ausgabe erscheint live darunter; die Zeile
+  nimmt dann den nächsten Befehl (`↑` die letzten), `cd` bleibt, Eingaben gehen an den laufenden Befehl, `Strg+C` bricht
+  ab, `Strg+L` leert. Umschalt+Enter öffnet den Befehl in Windows Terminal / PowerShell / cmd bzw. Terminal / iTerm (für
+  Programme mit eigener Oberfläche wie vim oder ssh); abschaltbar unter Einstellungen › Suche.
+- **Web**: `heise.de` öffnet die Adresse, `g …`, `wiki …`, `yt …` suchen mit Schlüsselwort (eigene Websuchen anlegen) –
+  der Anfang genügt (`w alfred` → Wikipedia), „Im Web suchen“ steht unter jeder Suche.
 - **System**: Sperren, Energie sparen, Abmelden, Neu starten, Herunterfahren, Papierkorb leeren (mit Rückfrage, wo es Arbeit kostet).
-- **Themes**: sieben eingebaute (hell, dunkel, Glas mit Acryl/Mica, kompakt …), eigene mit Live-Vorschau, weitere im Store.
+- **Themes**: neun eingebaute (hell, dunkel, Glas mit Acryl/Mica, kompakt, **Kante** und **Kante Hell**: flach und eckig,
+  die Auswahl vollflächig in der Akzentfarbe), eigene mit Live-Vorschau, weitere im Store.
 - **Plugins und Skripte**: Ein Plugin ist ein Ordner mit `plugin.json` – oder einfach **ein Skript** (PowerShell, cmd, bash,
   zsh, Python, Node) mit Kopfzeilen `@name`, `@keyword` … Es läuft mit Enter oder liefert beim Tippen eigene Ergebnisse
   (JSON oder eine Zeile je Treffer). Skripte schreibst und testest du direkt in ThixFred.
 - **Store**: Plugins und Themes mit Prüfsumme, Updates, Entfernen; eine eigene Store-Adresse (z. B. der Firma) geht auch.
+  Das Schlüsselwort eines Store-Plugins, das noch fehlt (`ip`), bietet die Installation an – Enter, und es läuft.
 - **ThixCloud**: Einstellungen, Themes, Websuchen, deine Skripte und die Store-Pakete auf allen PCs und Macs gleich –
   angemeldet im Browser mit Code (oder Benutzername und Passwort). Tastenkürzel und Fenster bleiben je Computer.
 - **Tray / Menüleiste**, **Autostart**, **Setup** (Windows) bzw. **App-Bundle + DMG** (macOS), **OTA-Updates** mit optionalem
@@ -56,6 +60,7 @@ die **ThixCloud** (MatCloud), damit ThixFred auf allen deinen Computern gleich e
 | `Esc` | zurück (Meldung, Rückfrage), Suche leeren, dann schließen |
 | `Strg/⌘ + ,` | Einstellungen |
 | `Strg/⌘ + C` | eine Ausgabe im Launcher kopieren |
+| im Terminal | `Enter` ausführen bzw. Eingabe senden · `↑` `↓` letzte Befehle · `Strg + C` abbrechen · `Strg + L` leeren · `Bild↑` `Bild↓` blättern · `Esc` zurück |
 
 Im Einstellungsfenster: `Strg/⌘ + 1 … 4` Plugins, Store, Themes, Websuchen · `Strg/⌘ + ,` Einstellungen · `Strg/⌘ + F` Suche
 der Liste · `Strg/⌘ + B` Menü einklappen · `Esc` zurück. Die Version unten links („Version 1.0.0 · release“) öffnet „Über ThixFred“.

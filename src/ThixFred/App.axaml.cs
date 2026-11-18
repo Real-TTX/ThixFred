@@ -107,11 +107,12 @@ public partial class App : Application
         ApplyTheme(SettingsService.Get().Theme);
         SettingsService.Changed += (_, settings) => Ui.Post(() => ApplyTheme(settings.Theme));
 
-        _launcher = new LauncherWindow();
+        _launcher = CreateLauncher();
         _mainWindow = new MainWindow();
         _trayIcon = new TrayIcon(this);
         var hotkeyRegistered = RegisterHotkey();
         SyncService.Start();
+        _ = Task.Run(StoreService.WarmUpAsync); // the search then knows the keywords of the store ("ip" offers to install it)
 
         // Build the launcher's visuals once, off screen, so the first shortcut opens it as fast as every later one.
         _launcher.Prewarm();
@@ -188,6 +189,33 @@ public partial class App : Application
         }
 
         Ui.Post(() => _launcher.Toggle());
+    }
+
+    private LauncherWindow CreateLauncher()
+    {
+        var launcher = new LauncherWindow();
+        launcher.RebuildRequested += (_, _) => RebuildLauncher(launcher);
+        return launcher;
+    }
+
+    /// <summary>A theme of another kind of window (glass, shadow, flat): a new launcher replaces the old one, showing what it showed.</summary>
+    private void RebuildLauncher(LauncherWindow old)
+    {
+        if (_isExiting || _launcher != old)
+        {
+            return;
+        }
+
+        var wasVisible = old.IsVisible;
+        var query = old.IsInTerminal ? null : old.View.SearchBox.Text;
+        _launcher = CreateLauncher();
+        _launcher.Prewarm();
+        old.IsExiting = true;
+        old.Close();
+        if (wasVisible)
+        {
+            Dispatcher.UIThread.Post(() => _launcher.ShowLauncher(query), DispatcherPriority.Background);
+        }
     }
 
     /// <summary>Shows the launcher (tray, the settings window, the shortcut), optionally with a search.</summary>

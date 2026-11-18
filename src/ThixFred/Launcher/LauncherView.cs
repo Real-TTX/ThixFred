@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using MatDesktop;
 using ThixFred.Core.Models;
 
@@ -14,12 +15,17 @@ namespace ThixFred.Launcher;
 /// <summary>
 /// What the launcher shows, in the colours and the form of a <see cref="LauncherTheme"/> (the user's theme: the only place of
 /// ThixFred where colours come from data and not from MatDesktop's tokens): the search line, the results, a message or a
-/// question, and a line of hints at the bottom. The rows are made once and reused (no list control, no templates): a search
-/// on every key only changes texts. Used by the launcher window, the preview of the theme editor and the snapshots.
+/// question, the output of the integrated terminal, and a line of hints at the bottom. The rows are made once and reused (no
+/// list control, no templates): a search on every key only changes texts. Used by the launcher window, the preview of the
+/// theme editor and the snapshots.
 /// </summary>
 public sealed class LauncherView : Border
 {
     public const int MaxRows = 20;
+
+    public const string DefaultWatermark = "ThixFred – Programme, Rechnen, >Befehle …";
+
+    private const double TerminalHeight = 360;
 
     private readonly TextBox _search;
     private readonly MatIcon _searchIcon;
@@ -34,6 +40,11 @@ public sealed class LauncherView : Border
     private readonly TextBlock _footer;
     private readonly TextBlock _footerRight;
     private readonly Border _footerBar;
+    private readonly Border _terminalPanel;
+    private readonly ScrollViewer _terminalScroll;
+    private readonly SelectableTextBlock _terminalText;
+    private string _terminalHint = "";
+    private bool _scrollPending;
     private IReadOnlyList<SearchResult> _results = [];
     private LauncherTheme _theme = Core.Business.ThemeService.BuiltIn[0];
 
@@ -43,7 +54,7 @@ public sealed class LauncherView : Border
         _searchIcon = new MatIcon { Icon = "search", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 12, 0) };
         _search = new TextBox
         {
-            Watermark = "ThixFred – Programme, Rechnen, >Befehle …",
+            Watermark = DefaultWatermark,
             BorderThickness = new Thickness(0),
             Padding = new Thickness(0),
             VerticalContentAlignment = VerticalAlignment.Center,
@@ -72,6 +83,12 @@ public sealed class LauncherView : Border
         messageGrid.Children.Add(messageBody);
         _messagePanel = new Border { Padding = new Thickness(10, 8), Child = messageGrid, IsVisible = false };
 
+        // the integrated terminal: its output, monospaced, scrolled to the end while it grows
+        _terminalText = new SelectableTextBlock { TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace"), FontSize = 12.5 };
+        AutomationProperties.SetName(_terminalText, "Ausgabe");
+        _terminalScroll = new ScrollViewer { MaxHeight = TerminalHeight, Content = _terminalText, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
+        _terminalPanel = new Border { Padding = new Thickness(10, 4, 6, 4), Child = _terminalScroll, IsVisible = false };
+
         _footer = new TextBlock { FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         _footerRight = new TextBlock { FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, Text = "ThixFred" };
         var footerGrid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
@@ -80,7 +97,7 @@ public sealed class LauncherView : Border
         footerGrid.Children.Add(_footerRight);
         _footerBar = new Border { Child = footerGrid, Padding = new Thickness(12, 7), Margin = new Thickness(0, 6, 0, 0), IsVisible = false };
 
-        Child = new StackPanel { Children = { new Border { Padding = new Thickness(8, 6), Child = searchLine }, _separator, _rows, _messagePanel, _footerBar } };
+        Child = new StackPanel { Children = { new Border { Padding = new Thickness(8, 6), Child = searchLine }, _separator, _rows, _messagePanel, _terminalPanel, _footerBar } };
         ApplyTheme(_theme);
     }
 
@@ -102,6 +119,26 @@ public sealed class LauncherView : Border
 
     /// <summary>True while a message or a question is shown instead of the results.</summary>
     public bool IsShowingMessage => _messagePanel.IsVisible;
+
+    /// <summary>True while the output of the integrated terminal is shown instead of the results.</summary>
+    public bool IsShowingTerminal => _terminalPanel.IsVisible;
+
+    /// <summary>The shown output of the terminal (tests).</summary>
+    public string? TerminalText => _terminalPanel.IsVisible ? _terminalText.Text : null;
+
+    /// <summary>The symbol before the search: the magnifier, or the terminal's prompt sign.</summary>
+    public string SearchGlyph
+    {
+        get => _searchIcon.Icon ?? "";
+        set => _searchIcon.Icon = value;
+    }
+
+    /// <summary>The right end of the hint line ("ThixFred", the terminal's folder).</summary>
+    public string FooterRight
+    {
+        get => _footerRight.Text ?? "";
+        set => _footerRight.Text = value;
+    }
 
     /// <summary>The text of the shown message (tests, Ctrl/Cmd+C).</summary>
     public string? MessageText => _messagePanel.IsVisible ? _messageText.Text : null;
@@ -131,7 +168,7 @@ public sealed class LauncherView : Border
         _search.Foreground = text;
         _search.CaretBrush = accent;
         _search.SelectionBrush = Brush(theme.Selection);
-        _search.SelectionForegroundBrush = text;
+        _search.SelectionForegroundBrush = theme.SelectionText.Length > 0 ? Brush(theme.SelectionText) : text;
         // Fluent paints the field on hover and focus: here it stays the window
         foreach (var key in new[] { "TextControlBackground", "TextControlBackgroundPointerOver", "TextControlBackgroundFocused", "TextControlBackgroundDisabled",
                      "TextControlBorderBrush", "TextControlBorderBrushPointerOver", "TextControlBorderBrushFocused" })
@@ -159,6 +196,8 @@ public sealed class LauncherView : Border
         _footerRight.Foreground = muted;
         _footerBar.BorderBrush = Brush(theme.Border);
         _footerBar.BorderThickness = new Thickness(0, 1, 0, 0);
+        _terminalText.Foreground = text;
+        _terminalText.SelectionBrush = Brush(theme.Selection);
         foreach (var row in _rowPool)
         {
             row.Apply(theme);
@@ -172,6 +211,7 @@ public sealed class LauncherView : Border
     {
         _results = results.Take(MaxRows).ToList();
         HideMessage();
+        _terminalPanel.IsVisible = false;
         while (_rowPool.Count < _results.Count)
         {
             var row = new ResultRow(_rowPool.Count);
@@ -228,9 +268,37 @@ public sealed class LauncherView : Border
         _messageIcon.Foreground = Brush(_theme.Accent);
         _messageHint.Text = hint;
         _messagePanel.IsVisible = true;
+        _terminalPanel.IsVisible = false;
         _rows.IsVisible = false;
         Refresh();
     }
+
+    /// <summary>The output of the integrated terminal instead of the results; it follows the end unless the user scrolled up.</summary>
+    public void ShowTerminal(string output, string hint)
+    {
+        var followsEnd = !_terminalPanel.IsVisible || _terminalScroll.Offset.Y >= _terminalScroll.Extent.Height - _terminalScroll.Viewport.Height - 4;
+        _terminalText.Text = output.Length > 0 ? output.TrimEnd('\n') : "Noch keine Ausgabe.";
+        _terminalText.Opacity = output.Length > 0 ? 1 : 0.6;
+        _terminalHint = hint;
+        _terminalPanel.IsVisible = true;
+        _messagePanel.IsVisible = false;
+        _rows.IsVisible = false;
+        Refresh();
+        if (followsEnd && !_scrollPending)
+        {
+            // after the layout: only then the new end is known
+            _scrollPending = true;
+            Dispatcher.UIThread.Post(() =>
+            {
+                _scrollPending = false;
+                _terminalScroll.ScrollToEnd();
+            }, DispatcherPriority.Background);
+        }
+    }
+
+    /// <summary>Bild↑ / Bild↓ in the terminal: one page of output.</summary>
+    public void ScrollTerminal(int pages) =>
+        _terminalScroll.Offset = new Vector(0, Math.Max(0, _terminalScroll.Offset.Y + pages * (_terminalScroll.Viewport.Height - 20)));
 
     public void HideMessage()
     {
@@ -241,14 +309,18 @@ public sealed class LauncherView : Border
     private void Refresh()
     {
         var hasRows = _rows.IsVisible && _results.Count > 0;
-        _separator.IsVisible = hasRows || _messagePanel.IsVisible;
+        _separator.IsVisible = hasRows || _messagePanel.IsVisible || _terminalPanel.IsVisible;
         for (var index = 0; index < _rowPool.Count; index++)
         {
             _rowPool[index].SetSelected(index == SelectedIndex);
         }
 
-        _footerBar.IsVisible = hasRows || _messagePanel.IsVisible;
-        if (_messagePanel.IsVisible)
+        _footerBar.IsVisible = hasRows || _messagePanel.IsVisible || _terminalPanel.IsVisible;
+        if (_terminalPanel.IsVisible)
+        {
+            _footer.Text = _terminalHint;
+        }
+        else if (_messagePanel.IsVisible)
         {
             _footer.Text = "Esc zurück · " + (OperatingSystem.IsMacOS() ? "⌘C" : "Strg+C") + " kopiert";
         }
@@ -284,6 +356,10 @@ public sealed class LauncherView : Border
         private readonly TextBlock _subtitle = new() { TextTrimming = TextTrimming.CharacterEllipsis };
         private readonly TextBlock _shortcut = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 4, 0) };
         private IBrush _selection = Brushes.Transparent;
+        private IBrush _text = Brushes.Black;
+        private IBrush _muted = Brushes.Gray;
+        private IBrush _accent = Brushes.Blue;
+        private IBrush? _selectionText;
         private string? _iconSource;
 
         public ResultRow(int index)
@@ -313,15 +389,21 @@ public sealed class LauncherView : Border
             _title.FontSize = Math.Round(15 * Math.Clamp(scale, 0.85, 1.25), 1);
             _subtitle.FontSize = Math.Round(12 * Math.Clamp(scale, 0.9, 1.2), 1);
             _shortcut.FontSize = 11.5;
-            _title.Foreground = Brush(theme.Text);
-            _subtitle.Foreground = Brush(theme.MutedText);
-            _shortcut.Foreground = Brush(theme.MutedText);
-            _glyph.Foreground = Brush(theme.Accent);
+            _text = Brush(theme.Text);
+            _muted = Brush(theme.MutedText);
+            _accent = Brush(theme.Accent);
+            _selectionText = theme.SelectionText.Length > 0 ? Brush(theme.SelectionText) : null;
             _glyphTile.Background = Brush(theme.Selection);
             _selection = Brush(theme.Selection);
-            CornerRadius = new CornerRadius(Math.Max(4, theme.CornerRadius - theme.Padding / 2));
+
+            // square themes stay square everywhere; round ones round the rows a little less than the window
+            CornerRadius = new CornerRadius(theme.CornerRadius == 0 ? 0 : Math.Max(4, theme.CornerRadius - theme.Padding / 2));
+            _glyphTile.CornerRadius = new CornerRadius(Math.Min(8, theme.CornerRadius));
             MinHeight = Math.Round(48 * Math.Clamp(scale, 0.8, 1.2));
+            SetSelected(_isSelected);
         }
+
+        private bool _isSelected;
 
         public void Show(SearchResult result, string? shortcut)
         {
@@ -342,7 +424,20 @@ public sealed class LauncherView : Border
             ShowBitmap(bitmap);
         }
 
-        public void SetSelected(bool selected) => Background = selected ? _selection : Brushes.Transparent;
+        /// <summary>The chosen row: the selection behind it; a theme with its own text colour for it (flat: white on the accent) writes in that.</summary>
+        public void SetSelected(bool selected)
+        {
+            _isSelected = selected;
+            Background = selected ? _selection : Brushes.Transparent;
+            var ownText = selected && _selectionText is not null;
+            _title.Foreground = ownText ? _selectionText : _text;
+            _subtitle.Foreground = ownText ? _selectionText : _muted;
+            _subtitle.Opacity = ownText ? 0.85 : 1;
+            _shortcut.Foreground = ownText ? _selectionText : _muted;
+            // with an own text colour the tiles are filled with the selection and the symbol is written in that colour (flat: white on blue)
+            _glyph.Foreground = _selectionText ?? _accent;
+            _glyphTile.Background = ownText ? Brushes.Transparent : _selection;
+        }
 
         private void ShowBitmap(Bitmap? bitmap)
         {

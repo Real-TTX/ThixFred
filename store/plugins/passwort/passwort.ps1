@@ -1,4 +1,4 @@
-# Five random passwords from a cryptographic generator, one per line. The first argument is the length (8-128, default 20).
+﻿# Five random passwords from a cryptographic generator, one per line. The first argument is the length (8-128, default 20).
 param([string]$Query)
 
 $length = 20
