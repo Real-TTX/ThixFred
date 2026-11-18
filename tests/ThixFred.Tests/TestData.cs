@@ -63,6 +63,9 @@ internal sealed class TestData : IDisposable
     /// <summary>What would have been started (program or address, arguments).</summary>
     public List<(string Program, IReadOnlyList<string> Arguments)> Started { get; } = [];
 
+    /// <summary>What Shell.Open opened last: the target itself on Windows, the argument of /usr/bin/open on macOS.</summary>
+    public string LastOpened => Started.Last() is var (program, arguments) && program == "/usr/bin/open" ? arguments[0] : Started.Last().Program;
+
     /// <summary>What went into the clipboard last.</summary>
     public string? Clipboard { get; private set; }
 

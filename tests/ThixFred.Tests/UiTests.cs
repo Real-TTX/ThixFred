@@ -57,7 +57,7 @@ public sealed class UiTests
         launcher.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
         Settle(launcher);
         Assert.False(launcher.IsVisible, "the launcher hides after starting a program");
-        Assert.Equal(SampleData.Apps[0].Path, data.Started.Last().Program);
+        Assert.Equal(SampleData.Apps[0].Path, data.LastOpened);
 
         // the next time the same letters choose what was chosen
         launcher.ShowLauncher();
@@ -80,7 +80,7 @@ public sealed class UiTests
         var second = launcher.View.Results[1];
         launcher.KeyPressQwerty(PhysicalKey.Digit2, CommandModifier);
         Settle(launcher);
-        Assert.Equal(second.Action.Target, data.Started.Last().Program);
+        Assert.Equal(second.Action.Target, data.LastOpened);
 
         launcher.ShowLauncher("abc");
         Settle(launcher);

@@ -118,12 +118,12 @@ public sealed class SearchTests
         using var data = new TestData();
         var word = SearchService.Search("word", 8)[0];
         await LaunchService.ExecuteAsync(word, word.Action, "word");
-        Assert.Equal(SampleData.Apps.Single(app => app.Name == "Microsoft Word").Path, data.Started.Last().Program);
+        Assert.Equal(SampleData.Apps.Single(app => app.Name == "Microsoft Word").Path, data.LastOpened);
         if (OperatingSystem.IsWindows())
         {
             Assert.Equal(LaunchActionKind.OpenAsAdministrator, word.AlternateAction!.Kind);
             await LaunchService.ExecuteAsync(word, word.AlternateAction, "word");
-            Assert.StartsWith("runas:", data.Started.Last().Program);
+            Assert.StartsWith("runas:", data.LastOpened);
         }
     }
 
