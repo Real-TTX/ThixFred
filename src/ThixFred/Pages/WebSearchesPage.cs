@@ -24,7 +24,8 @@ public sealed class WebSearchesPage : UserControl, IRefreshable, ISearchable
         _window = window;
         var toolbar = new ListToolbar("Websuchen durchsuchen", Filters, Sortings);
         var list = new EntityList("Keine Websuche passt zur Suche.");
-        _layout = new ListLayout("Websuchen", "Schlüsselwort, Leerzeichen, Suchbegriff: „g heise“ sucht mit Google, „wiki Alfred“ in der Wikipedia. Ohne Schlüsselwort bietet der Launcher die Standardsuche an (Einstellungen › Suche).", toolbar, list);
+        list.AddTile("plus", "Neue Websuche", "Eine Seite mit eigenem Schlüsselwort durchsuchen", () => _window.OpenPage(new WebSearchEditPage(_window, null)));
+        _layout = new ListLayout("Websuchen", "Schlüsselwort, Leerzeichen, Suchbegriff: „g heise“ sucht mit Google, „wiki Alfred“ in der Wikipedia. Ohne Schlüsselwort bietet der Launcher die Standardsuche an (Einstellungen › Suche).", toolbar, list, "websearches");
         _layout.AddActions(
             Ui.Button("plus", "Neue Websuche", "MatButton.Primary", () => _window.OpenPage(new WebSearchEditPage(_window, null))),
             Ui.Button("restore", "Standard wiederherstellen", click: () =>
@@ -41,7 +42,7 @@ public sealed class WebSearchesPage : UserControl, IRefreshable, ISearchable
             }));
         toolbar.Changed += (_, _) => Refresh();
         list.Opened += (_, id) => _window.OpenPage(new WebSearchEditPage(_window, WebSearchService.Find(id)));
-        Content = Ui.Page(_layout);
+        Content = Ui.Page(_layout, double.PositiveInfinity);
         WebSearchService.Changed += (_, _) => Ui.Post(Refresh);
         Refresh();
     }

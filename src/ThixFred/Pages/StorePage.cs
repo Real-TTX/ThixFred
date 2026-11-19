@@ -9,8 +9,8 @@ using ThixFred.Core.Models;
 namespace ThixFred.Pages;
 
 /// <summary>
-/// The store: plugins and themes to install. The toolbar searches, filters (plugins, themes, installed, updates) and sorts; a row
-/// has its install / update button, opening it shows its page. The catalog loads when the page is shown (at most once an hour,
+/// The store: plugins and themes to install. The toolbar searches, filters (plugins, themes, installed, updates) and sorts; tiles
+/// (default) or rows, each with its install / update button; opening one shows its page. The catalog loads when the page is shown (at most once an hour,
 /// "Aktualisieren" asks again).
 /// </summary>
 public sealed class StorePage : UserControl, IRefreshable, ISearchable
@@ -28,7 +28,7 @@ public sealed class StorePage : UserControl, IRefreshable, ISearchable
         _window = window;
         var toolbar = new ListToolbar("Store durchsuchen", Filters, Sortings);
         var list = new EntityList("Nichts gefunden.");
-        _layout = new ListLayout("Store", "Plugins und Themes für ThixFred. Jedes Paket wird vor der Installation geprüft (Prüfsumme); mit der Cloud kommt es auch auf deine anderen Computer.", toolbar, list);
+        _layout = new ListLayout("Store", "Plugins und Themes für ThixFred. Jedes Paket wird vor der Installation geprüft (Prüfsumme); mit der Cloud kommt es auch auf deine anderen Computer.", toolbar, list, "store");
         _layout.AddActions(
             Ui.Button("refresh", "Aktualisieren", click: () => _ = LoadAsync(refresh: true)),
             Ui.Button("plug", "Installierte Plugins", click: () => _window.ShowOn(AppCommand.Plugins)));
@@ -40,13 +40,23 @@ public sealed class StorePage : UserControl, IRefreshable, ISearchable
                 _window.OpenPage(new StoreItemPage(_window, listing));
             }
         };
-        Content = Ui.Page(_layout);
+        Content = Ui.Page(_layout, double.PositiveInfinity);
         StoreService.Changed += (_, _) => Ui.Post(() => _ = LoadAsync(refresh: false));
     }
 
     public EntityList List => _layout.List;
 
     public void FocusSearch() => _layout.Toolbar.SearchBox.Focus();
+
+    public ListToolbar Toolbar => _layout.Toolbar;
+
+    /// <summary>Shows only plugins or only themes (null: everything).</summary>
+    public void ShowKind(StoreItemKind? kind) => _layout.Toolbar.FilterIndex = kind switch
+    {
+        StoreItemKind.Plugin => 1,
+        StoreItemKind.Theme => 2,
+        _ => 0,
+    };
 
     public void Refresh() => _ = LoadAsync(refresh: false);
 

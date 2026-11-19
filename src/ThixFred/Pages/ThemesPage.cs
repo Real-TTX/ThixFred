@@ -29,14 +29,16 @@ public sealed class ThemesPage : UserControl, IRefreshable, ISearchable
         _window = window;
         var toolbar = new ListToolbar("Themes durchsuchen", Filters, Sortings);
         var list = new EntityList("Kein Theme passt zur Suche.");
-        _layout = new ListLayout("Themes", "So sieht der Launcher aus. Eigene Themes kommen mit der Cloud auf deine anderen Computer, weitere gibt es im Store.", toolbar, list);
+        list.AddTile("plus", "Neues Theme", "Eigene Farben, Ecken, Schrift – mit Live-Vorschau", () => Open(ThemeService.LightId, asNew: true));
+        list.AddTile("store", "Mehr im Store", "Weitere Themes zum Installieren", () => _window.ShowStore(StoreItemKind.Theme));
+        _layout = new ListLayout("Themes", "So sieht der Launcher aus. Eigene Themes kommen mit der Cloud auf deine anderen Computer, weitere gibt es im Store.", toolbar, list, "themes");
         _layout.AddActions(
             Ui.Button("plus", "Neues Theme", "MatButton.Primary", () => Open(ThemeService.LightId, asNew: true)),
             Ui.Button("monitor", "Wie das System verwenden", click: () => Apply(() => ThemeService.Use(LauncherTheme.SystemId))),
-            Ui.Button("store", "Themes im Store", click: () => _window.ShowOn(AppCommand.Store)));
+            Ui.Button("store", "Themes im Store", click: () => _window.ShowStore(StoreItemKind.Theme)));
         toolbar.Changed += (_, _) => Refresh();
         list.Opened += (_, id) => Open(id, asNew: false);
-        Content = Ui.Page(_layout);
+        Content = Ui.Page(_layout, double.PositiveInfinity);
         ThemeService.Changed += (_, _) => Ui.Post(Refresh);
         Refresh();
     }
@@ -80,11 +82,67 @@ public sealed class ThemesPage : UserControl, IRefreshable, ISearchable
         {
             Badges = badges,
             Leading = () => Swatch(theme),
+            Banner = () => Preview(theme),
             Trailing = () =>
             {
                 var use = Ui.Button("check", "Verwenden", click: () => Apply(() => ThemeService.Use(theme.Id)));
                 use.IsEnabled = theme.Id != chosen;
                 return use;
+            },
+        };
+    }
+
+    /// <summary>The launcher of a theme in small (the band of its tile): the search line, the chosen row, another row.</summary>
+    internal static Control Preview(LauncherTheme theme)
+    {
+        var radius = Math.Min(theme.CornerRadius, 10);
+        var selectionText = theme.SelectionText.Length > 0 ? theme.SelectionText : theme.Text;
+        Border Bar(double width, string colour, double height = 5) => new()
+        {
+            Width = width,
+            Height = height,
+            CornerRadius = new CornerRadius(radius == 0 ? 0 : height / 2),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            Background = LauncherView.Brush(colour),
+        };
+
+        Border Glyph(string colour) => new()
+        {
+            Width = 10,
+            Height = 10,
+            Margin = new Thickness(0, 0, 7, 0),
+            CornerRadius = new CornerRadius(Math.Min(radius, 3)),
+            Background = LauncherView.Brush(colour),
+        };
+
+        var chosen = new Border
+        {
+            Height = 20,
+            Padding = new Thickness(7, 0),
+            CornerRadius = new CornerRadius(Math.Min(radius, 5)),
+            Background = LauncherView.Brush(theme.Selection),
+            Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { Glyph(theme.SelectionText.Length > 0 ? theme.SelectionText : theme.Accent), Bar(70, selectionText) } },
+        };
+        var other = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(7, 0), Children = { Glyph(theme.MutedText), Bar(56, theme.MutedText) } };
+        return new Border
+        {
+            Width = 180,
+            Height = 76,
+            Padding = new Thickness(8, 9),
+            CornerRadius = new CornerRadius(radius),
+            BorderThickness = new Thickness(1),
+            Background = LauncherView.Brush(theme.Background.Length == 9 ? "#FF" + theme.Background[3..] : theme.Background),
+            BorderBrush = LauncherView.Brush(theme.Border),
+            Child = new StackPanel
+            {
+                Spacing = 6,
+                Children =
+                {
+                    new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(2, 0, 0, 2), Children = { Bar(2, theme.Accent, 12), new Border { Width = 6 }, Bar(84, theme.Text, 6) } },
+                    chosen,
+                    other,
+                },
             },
         };
     }

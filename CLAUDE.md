@@ -88,7 +88,9 @@ src/ThixFred            (Avalonia app)
   Pages/                PluginsPage + PluginEditPage + ScriptEditPage (tabs Allgemein | Skript | Testen), StorePage + StoreItemPage,
                         ThemesPage + ThemeEditPage (live preview), WebSearchesPage + WebSearchEditPage, SettingsPage (Allgemein |
                         Suche | Cloud | Updates | Erweitert), AboutPage
-  Controls/             ONE code base per control: ListToolbar (search, filter, sort), EntityList (+ EntityRow), ListLayout and
+  Controls/             ONE code base per control: ListToolbar (search, filter, sort, the switch tiles / list), EntityList (+ EntityRow:
+                        tiles in a TileGrid – icon or Banner on a band, a click opens, "add" tiles at the end – or card rows),
+                        ListLayout (with a look key: tiles or rows, remembered per page in AppSettings.ListLooks, local only) and
                         EditLayout (the list page and the create/update page), ActionBar, FormErrors, IconLabel, InfoBar, KeyCaps,
                         HotkeyRecorder
   Tray/ Setup/ Dialogs/ TrayIcon (MatTray), ThixFredSetup (MatSetupWindow), ConfirmDialog, ProblemReportDialog
@@ -106,8 +108,8 @@ tests/ThixFred.Tests    the tests; FakeCloud = MatCloud's general sync in memory
   What the business layer must not do itself (the clipboard, opening windows) it gets as a delegate or returns as `LaunchOutcome`.
 - **The search path is hot:** `SearchService.Search` is synchronous and in memory; prepare strings once (`AppEntry.Prepared`);
   nothing on it reads a file or starts a process – except filter plugins, which the launcher asks afterwards, cancellable.
-- **UI rules (owner):** entities have a list page (toolbar with search, filter, sort ABOVE the list; actions BELOW, left-aligned,
-  positive to negative) and a create/update page with tabs for its areas and one row of buttons (Speichern, Zurück … gap … Löschen);
+- **UI rules (owner):** entities have a list page (toolbar with search, filter, sort ABOVE the list; the entries as tiles – the
+  default, like a store, the last tile adds – or rows; actions BELOW, left-aligned, positive to negative) and a create/update page with tabs for its areas and one row of buttons (Speichern, Zurück … gap … Löschen);
   hide what does not apply (Ausgabe only for "Ausführen"); icons where they help; cards keep their distance; About opens from the
   version bottom left. **Colours only from MatDesktop's theme** (DESK-02) – except `Launcher/`, whose colours are the user's theme
   (data); `UiTests.No_window_writes_a_colour_of_its_own` holds that. Several instances of a control on one page must work.

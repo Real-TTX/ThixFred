@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using MatDesktop;
 using ThixFred.Core.Business;
 using ThixFred.Core.Infrastructure;
@@ -284,7 +285,7 @@ public sealed class UiTests
         var window = OpenWindow();
         Save(window, "main-plugins");
         var plugins = window.PluginsPage;
-        Assert.Equal(PluginService.BuiltIn.Count, plugins.List.List.ItemCount);
+        Assert.Equal(PluginService.BuiltIn.Count, plugins.List.Rows.Count);
 
         // Neues Skript: the name is missing – the error stands at the field
         window.OpenPage(new ScriptEditPage(window, ScriptService.Template(ScriptLanguage.PowerShell)));
@@ -299,16 +300,66 @@ public sealed class UiTests
         Assert.True(page.Save());
         Settle(window);
         Assert.IsType<PluginsPage>(window.CurrentPage);
-        Assert.Equal(PluginService.BuiltIn.Count + 1, plugins.List.List.ItemCount);
+        Assert.Equal(PluginService.BuiltIn.Count + 1, plugins.List.Rows.Count);
 
         // the toolbar filters the own scripts
         plugins.Toolbar.FilterIndex = 3;
         Settle(window);
-        Assert.Equal(1, plugins.List.List.ItemCount);
+        Assert.Single(plugins.List.Rows);
         ScriptService.Delete("hallo");
         Settle(window);
-        Assert.Equal(0, plugins.List.List.ItemCount);
+        Assert.Empty(plugins.List.Rows);
         Close(window);
+    }
+
+    [AvaloniaFact]
+    public void The_lists_open_as_tiles_add_from_the_store_and_switch_to_rows()
+    {
+        using var data = new TestData();
+        SampleData.Create();
+        var window = OpenWindow();
+        var plugins = window.PluginsPage;
+        Assert.Equal(ListLook.Tiles, plugins.List.Look);
+
+        // the tiles end with "Hinzufügen" (the store, its plugins) and "Eigenes Skript"
+        var count = plugins.List.Rows.Count;
+        Assert.Equal(count + 2, plugins.List.List.ItemCount);
+        ScrollToEnd(window);
+        Save(window, "main-plugins-add");
+        plugins.List.List.SelectedIndex = count;
+        plugins.List.List.ContainerFromIndex(count)!.Focus();
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Settle(window);
+        Assert.IsType<StorePage>(window.CurrentPage);
+        Assert.Equal(1, window.StorePage.Toolbar.FilterIndex);
+
+        // a click on a tile opens it, a click on its switch does not
+        window.ShowOn(AppCommand.Plugins);
+        Settle(window);
+        var tile = (Control)plugins.List.List.Items[0]!;
+        var toggle = tile.GetVisualDescendants().OfType<ToggleSwitch>().First();
+        toggle.RaiseEvent(new TappedEventArgs(InputElement.TappedEvent, null!) { Source = toggle });
+        Settle(window);
+        Assert.IsType<PluginsPage>(window.CurrentPage);
+        tile.RaiseEvent(new TappedEventArgs(InputElement.TappedEvent, null!) { Source = tile });
+        Settle(window);
+        Assert.True(window.CurrentPage is ScriptEditPage or PluginEditPage, window.CurrentPage?.GetType().Name);
+        window.GoBack();
+        Settle(window);
+
+        // rows: no add tiles; remembered on this computer, the cloud never gets it
+        plugins.Toolbar.ChooseLook(ListLook.List);
+        Settle(window);
+        Assert.Equal(ListLook.List, plugins.List.Look);
+        Assert.Equal(count, plugins.List.List.ItemCount);
+        Assert.Equal(ListLook.List, SettingsService.LookOf("plugins"));
+        Assert.Equal(ListLook.Tiles, SettingsService.LookOf("store"));
+        Save(window, "main-plugins-list");
+        Close(window);
+
+        var again = OpenWindow();
+        Assert.Equal(ListLook.List, again.PluginsPage.List.Look);
+        Close(again);
     }
 
     [AvaloniaFact]
@@ -319,7 +370,7 @@ public sealed class UiTests
         var window = OpenWindow();
         window.ShowOn(AppCommand.Themes);
         Settle(window);
-        Assert.Equal(ThemeService.List().Count, window.ThemesPage.List.List.ItemCount);
+        Assert.Equal(ThemeService.List().Count, window.ThemesPage.List.Rows.Count);
         Save(window, "main-themes");
         window.OpenPage(new ThemeEditPage(window, ThemeService.Find("abendrot")!));
         Settle(window);
@@ -330,13 +381,13 @@ public sealed class UiTests
 
         window.ShowOn(AppCommand.WebSearches);
         Settle(window);
-        Assert.Equal(WebSearchService.List().Count, window.WebSearchesPage.List.List.ItemCount);
+        Assert.Equal(WebSearchService.List().Count, window.WebSearchesPage.List.Rows.Count);
         Save(window, "main-websearches");
 
         window.ShowOn(AppCommand.Store);
         window.StorePage.ShowListings(SampleData.StoreListings);
         Settle(window);
-        Assert.Equal(SampleData.StoreListings.Count, window.StorePage.List.List.ItemCount);
+        Assert.Equal(SampleData.StoreListings.Count, window.StorePage.List.Rows.Count);
         Save(window, "main-store");
         Close(window);
     }
@@ -498,6 +549,16 @@ public sealed class UiTests
         {
             Settle(window);
         }
+    }
+
+    private static void ScrollToEnd(Window window)
+    {
+        foreach (var viewer in window.GetVisualDescendants().OfType<ScrollViewer>().Where(viewer => viewer.IsEffectivelyVisible))
+        {
+            viewer.ScrollToEnd();
+        }
+
+        Settle(window);
     }
 
     private static void Settle(Window window)

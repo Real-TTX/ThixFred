@@ -33,6 +33,9 @@ die **ThixCloud** (MatCloud), damit ThixFred auf allen deinen Computern gleich e
   (JSON oder eine Zeile je Treffer). Skripte schreibst und testest du direkt in ThixFred.
 - **Store**: Plugins und Themes mit Prüfsumme, Updates, Entfernen; eine eigene Store-Adresse (z. B. der Firma) geht auch.
   Das Schlüsselwort eines Store-Plugins, das noch fehlt (`ip`), bietet die Installation an – Enter, und es läuft.
+- **Einstellungsfenster**: Plugins, Store, Themes und Websuchen als große Kacheln (Themes mit einer kleinen Vorschau des
+  Launchers) oder als Liste – umschaltbar neben der Suche, die Wahl bleibt je Seite. Die letzte Kachel fügt hinzu: Plugins aus
+  dem Store, ein eigenes Skript, ein neues Theme, eine Websuche.
 - **ThixCloud**: Einstellungen, Themes, Websuchen, deine Skripte und die Store-Pakete auf allen PCs und Macs gleich –
   angemeldet im Browser mit Code (oder Benutzername und Passwort). Tastenkürzel und Fenster bleiben je Computer.
 - **Tray / Menüleiste**, **Autostart**, **Setup** (Windows) bzw. **App-Bundle + DMG** (macOS), **OTA-Updates** mit optionalem

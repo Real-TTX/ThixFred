@@ -8,6 +8,16 @@ public enum ThemeChoice
     Dark = 2,
 }
 
+/// <summary>How a list page of the settings window shows its entries.</summary>
+public enum ListLook
+{
+    /// <summary>Big tiles side by side (the default: like a store).</summary>
+    Tiles = 0,
+
+    /// <summary>One card row each.</summary>
+    List = 1,
+}
+
 /// <summary>Where "&gt;ping heise.de" runs.</summary>
 public enum TerminalChoice
 {
@@ -80,6 +90,9 @@ public sealed record AppSettings
 
     /// <summary>The menu at the left of the settings window is folded to its icons.</summary>
     public bool IsSidebarCollapsed { get; init; }
+
+    /// <summary>Tiles or list, per list page ("plugins", "store", "themes", "websearches"); missing = tiles. Stays on this computer.</summary>
+    public IReadOnlyDictionary<string, ListLook> ListLooks { get; init; } = new Dictionary<string, ListLook>();
 
     /// <summary>The welcome hint (shortcut, tray) has been shown.</summary>
     public bool WelcomeShown { get; init; }

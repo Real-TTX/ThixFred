@@ -11,8 +11,9 @@ namespace ThixFred.Pages;
 
 /// <summary>
 /// Plugins and scripts: the built-in providers, the plugins of the store and of the plugins folder, the user's scripts. The
-/// toolbar searches, filters (source, switched off) and sorts; a switch in the row turns a plugin on or off; a row opens its
-/// page (a script: the script editor). Below: "Neues Skript", "Plugin-Ordner öffnen", "Neu einlesen".
+/// toolbar searches, filters (source, switched off) and sorts; tiles (default) or rows; a switch turns a plugin on or off; a
+/// click opens its page (a script: the script editor). The last tiles add: "Hinzufügen" (the store, its plugins) and "Eigenes
+/// Skript". Below: "Hinzufügen", "Neues Skript", "Plugin-Ordner öffnen", "Neu einlesen".
 /// </summary>
 public sealed class PluginsPage : UserControl, IRefreshable, ISearchable
 {
@@ -27,10 +28,12 @@ public sealed class PluginsPage : UserControl, IRefreshable, ISearchable
         _window = window;
         var toolbar = new ListToolbar("Plugins durchsuchen", Filters, Sortings);
         var list = new EntityList("Kein Plugin passt zur Suche.");
-        _layout = new ListLayout("Plugins", "Was der Launcher kann: eingebaute Funktionen, Plugins aus dem Store und deine eigenen Skripte. Ein Plugin antwortet auf sein Schlüsselwort, z. B. „uuid“.", toolbar, list);
+        list.AddTile("plus", "Hinzufügen", "Plugins aus dem Store – geprüft und mit einem Klick installiert", () => _window.ShowStore(StoreItemKind.Plugin));
+        list.AddTile("code", "Eigenes Skript", "PowerShell, Python, Shell … mit eigenem Schlüsselwort", NewScript);
+        _layout = new ListLayout("Plugins", "Was der Launcher kann: eingebaute Funktionen, Plugins aus dem Store und deine eigenen Skripte. Ein Plugin antwortet auf sein Schlüsselwort, z. B. „uuid“.", toolbar, list, "plugins");
         _layout.AddActions(
-            Ui.Button("plus", "Neues Skript", "MatButton.Primary", NewScript),
-            Ui.Button("store", "Store öffnen", click: () => _window.ShowOn(AppCommand.Store)),
+            Ui.Button("plus", "Hinzufügen", "MatButton.Primary", () => _window.ShowStore(StoreItemKind.Plugin)),
+            Ui.Button("code", "Neues Skript", click: NewScript),
             Ui.Button("folder-open", "Plugin-Ordner öffnen", click: OpenFolder),
             Ui.Button("refresh", "Neu einlesen", click: () =>
             {
@@ -39,7 +42,7 @@ public sealed class PluginsPage : UserControl, IRefreshable, ISearchable
             }));
         toolbar.Changed += (_, _) => Refresh();
         list.Opened += (_, id) => Open(id);
-        Content = Ui.Page(_layout);
+        Content = Ui.Page(_layout, double.PositiveInfinity);
         PluginService.Changed += (_, _) => Ui.Post(Refresh);
         Refresh();
     }

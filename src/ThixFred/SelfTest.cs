@@ -45,9 +45,10 @@ internal static class SelfTest
         await Check("settings (JSON)", () =>
         {
             SettingsService.Update(settings => settings with { MaxResults = 7, Theme = ThemeChoice.Dark, Terminal = TerminalChoice.CommandPrompt });
+            SettingsService.RememberLook("plugins", ListLook.List);
             SettingsStore.Reset();
             var read = SettingsService.Get();
-            Ensure(read is { MaxResults: 7, Theme: ThemeChoice.Dark, Terminal: TerminalChoice.CommandPrompt }, "settings did not survive a save");
+            Ensure(read is { MaxResults: 7, Theme: ThemeChoice.Dark, Terminal: TerminalChoice.CommandPrompt } && SettingsService.LookOf("plugins") == ListLook.List, "settings did not survive a save");
             return Task.FromResult("");
         });
 
@@ -150,7 +151,7 @@ internal static class SelfTest
             var window = new MainWindow();
             window.ShowOn(AppCommand.Plugins);
             await Settle();
-            Ensure(window.PluginsPage.List.List.ItemCount > 0, "no plugin listed");
+            Ensure(window.PluginsPage.List.Rows.Count > 0, "no plugin listed");
             window.ShowOn(AppCommand.Themes);
             await Settle();
             window.ShowOn(AppCommand.WebSearches);

@@ -116,6 +116,13 @@ public partial class MainWindow : MatWindow
 
     public StorePage StorePage => _store.Value;
 
+    /// <summary>The store with only plugins or only themes ("Hinzufügen").</summary>
+    public void ShowStore(StoreItemKind? kind)
+    {
+        ShowOn(AppCommand.Store);
+        StorePage.ShowKind(kind);
+    }
+
     public ThemesPage ThemesPage => _themes.Value;
 
     public WebSearchesPage WebSearchesPage => _webSearches.Value;

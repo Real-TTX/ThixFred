@@ -55,7 +55,7 @@ public static class SettingsService
         return settings;
     }
 
-    /// <summary>Things the app remembers by itself (window size, folded menu, welcome shown, the last search): no configuration lock.</summary>
+    /// <summary>Things the app remembers by itself (window size, folded menu, tiles or list, welcome shown, the last search): no configuration lock.</summary>
     public static AppSettings Remember(Func<AppSettings, AppSettings> change)
     {
         var current = SettingsStore.Read();
@@ -65,10 +65,18 @@ public static class SettingsService
             WindowWidth = Math.Clamp(next.WindowWidth, 640, 4000),
             WindowHeight = Math.Clamp(next.WindowHeight, 420, 3000),
             IsSidebarCollapsed = next.IsSidebarCollapsed,
+            ListLooks = next.ListLooks,
             WelcomeShown = next.WelcomeShown,
             LastQuery = current.KeepLastQuery ? next.LastQuery : "",
         });
     }
+
+    /// <summary>Tiles or list for a list page (missing: tiles).</summary>
+    public static ListLook LookOf(string page) => Get().ListLooks.GetValueOrDefault(page, ListLook.Tiles);
+
+    /// <summary>Remembers tiles or list for a list page.</summary>
+    public static void RememberLook(string page, ListLook look) =>
+        Remember(current => current with { ListLooks = new Dictionary<string, ListLook>(current.ListLooks) { [page] = look } });
 
     /// <summary>The cloud part (only <see cref="SyncService"/>).</summary>
     internal static AppSettings UpdateCloud(Func<CloudSettings, CloudSettings> change) =>

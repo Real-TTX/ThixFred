@@ -41,7 +41,7 @@ public static class PluginService
     [
         Builtin(AppsId, "Programme", "Programme starten: Startmenü, Desktop und Store-Apps (Windows), Programme-Ordner (macOS).", "", "apps"),
         Builtin(CalculatorId, "Rechner", "Rechnet, was du tippst: 3,5 * (2 + 1)^2, sqrt(2), 200 + 15 %, 0xff. Enter kopiert das Ergebnis.", "", "grid"),
-        Builtin(TerminalId, "Terminal", "Führt einen Befehl im Terminal aus: >ping heise.de. Umschalt+Enter als Administrator (Windows).", ">", "terminal"),
+        Builtin(TerminalId, "Terminal", "Führt einen Befehl aus: >ping heise.de läuft im Launcher, Umschalt+Enter im Terminal-Fenster.", ">", "terminal"),
         Builtin(RunningId, "Programme beenden", "Laufende Programme schließen: kill word. Umschalt+Enter beendet sofort.", "kill", "x-circle"),
         Builtin(SystemId, "System", "Sperren, Energie sparen, Abmelden, Neu starten, Herunterfahren, Papierkorb leeren.", "", "power"),
         Builtin(WebId, "Web", "Adressen öffnen (heise.de) und Websuchen mit Schlüsselwort (g, wiki, yt …).", "", "globe"),

@@ -8,15 +8,31 @@ namespace ThixFred.Controls;
 
 /// <summary>
 /// The list page of an entity (owner's rule): the title, a line about it, a message, THE toolbar (search, filter, sort), the
-/// list and the actions below it, left-aligned from positive to negative.
+/// list and the actions below it, left-aligned from positive to negative. With a <c>lookKey</c> the list shows tiles or rows,
+/// switched in the toolbar and remembered per page (SettingsService.RememberLook); rows keep the width of a page, tiles use it all.
 /// </summary>
 public sealed class ListLayout : StackPanel
 {
-    public ListLayout(string title, string description, ListToolbar toolbar, EntityList list)
+    public const double RowsWidth = 920;
+
+    public ListLayout(string title, string description, ListToolbar toolbar, EntityList list, string? lookKey = null)
     {
         Spacing = 0;
         Toolbar = toolbar;
         List = list;
+        MaxWidth = RowsWidth;
+        if (lookKey is not null)
+        {
+            var look = Core.Business.SettingsService.LookOf(lookKey);
+            ShowLook(look);
+            toolbar.ShowLookSwitch(look);
+            toolbar.LookChanged += (_, chosen) =>
+            {
+                ShowLook(chosen);
+                Core.Business.SettingsService.RememberLook(lookKey, chosen);
+            };
+        }
+
         Children.Add(new TextBlock { Text = title }.Themed("MatText.PageTitle"));
         Children.Add(new TextBlock { Text = description, TextWrapping = Avalonia.Media.TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 14) }.Themed("MatText.Muted"));
         Children.Add(Message);
@@ -32,6 +48,13 @@ public sealed class ListLayout : StackPanel
     public EntityList List { get; }
 
     public ActionBar Actions { get; } = new() { Margin = new Thickness(0, 14, 0, 0) };
+
+    /// <summary>Tiles or rows (also from the switch of the toolbar).</summary>
+    public void ShowLook(ListLook look)
+    {
+        List.Look = look;
+        MaxWidth = look == ListLook.Tiles ? double.PositiveInfinity : RowsWidth;
+    }
 
     /// <summary>The buttons below the list, positive to negative.</summary>
     public void AddActions(params Control[] buttons)
