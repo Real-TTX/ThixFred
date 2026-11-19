@@ -15,10 +15,13 @@ public sealed class PlatformTests : IDisposable
         if (OperatingSystem.IsWindows())
         {
             InstallService.UseLocationsForTests(null);
+            ThixFred.Core.Platform.Windows.FileAssociations.UseClassesRootForTests(null);
             Registry.CurrentUser.DeleteSubKeyTree(@"Software\ThixFredTests", throwOnMissingSubKey: false);
         }
 
         AutostartService.UseLaunchAgentFolderForTests(null);
+        AutostartService.UseInMemoryEntry(null);
+        InstallerOptions.UseConfigForTests(null);
         _data.Dispose();
     }
 
@@ -37,8 +40,11 @@ public sealed class PlatformTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(source)!);
         File.WriteAllBytes(source, new byte[1024 * 8]);
 
+        AutostartService.UseInMemoryEntry(false);
+        ThixFred.Core.Platform.Windows.FileAssociations.UseClassesRootForTests(@"Software\ThixFredTests\Classes");
+        InstallerOptions.UseConfigForTests(InstallerOptions.Config with { FileTypes = [new InstallerFileType { Extension = ".fred", Name = "ThixFred-Test", Default = true }] });
         var steps = new List<string>();
-        InstallService.Install(source, new InstallOptions(StartWithWindows: false, DesktopShortcut: true), steps.Add);
+        InstallService.Install(source, new InstallChoices(DesktopShortcut: true, Autostart: false), steps.Add);
 
         Assert.True(File.Exists(InstallService.InstalledExecutable));
         Assert.True(File.Exists(InstallService.StartMenuShortcut));
@@ -46,9 +52,14 @@ public sealed class PlatformTests : IDisposable
         Assert.True(InstallService.IsInstalled);
         Assert.Equal(AppInfo.Version, InstallService.InstalledVersion);
         Assert.Contains("Installation abgeschlossen", steps);
+        Assert.Equal([".fred"], InstallerOptions.Current().FileTypes);
+        Assert.False(AutostartService.IsEnabled());
 
-        // An update keeps the shortcuts as they are.
-        InstallService.Install(source, options: null, _ => { });
+        // An update keeps the shortcuts as they are; a given option changes it.
+        InstallService.Install(source, null, _ => { });
+        Assert.True(File.Exists(InstallService.DesktopShortcut));
+        InstallService.Install(source, new InstallChoices(FileTypes: []), _ => { });
+        Assert.Empty(InstallerOptions.Current().FileTypes!);
         Assert.True(File.Exists(InstallService.DesktopShortcut));
 
         var removeLater = InstallService.Uninstall(deleteUserData: false, _ => { });
@@ -57,6 +68,37 @@ public sealed class PlatformTests : IDisposable
         Assert.False(File.Exists(InstallService.StartMenuShortcut));
         Assert.False(Directory.Exists(program));
         Assert.True(Directory.Exists(AppPaths.DataDirectory), "the data stays unless the user deletes it");
+    }
+
+    [Fact]
+    public void The_command_line_carries_the_install_options_and_refuses_what_it_does_not_know()
+    {
+        InstallerOptions.UseConfigForTests(InstallerOptions.Config with { FileTypes = [new InstallerFileType { Extension = ".md", Name = "Markdown", Default = true }, new InstallerFileType { Extension = ".txt", Name = "Text" }] });
+        var request = InstallerOptions.Parse(["--quiet", "--desktop-shortcut=yes", "--autostart=no", "--file-types=md,.TXT", "--start"]);
+        Assert.Equal(SetupAction.Install, request.Action);
+        Assert.True(request.Start);
+        Assert.Equal((true, false), (request.Choices.DesktopShortcut, request.Choices.Autostart));
+        Assert.Equal([".md", ".txt"], request.Choices.FileTypes);
+        Assert.Equal(["--desktop-shortcut=yes", "--autostart=no", "--file-types=.md,.txt"], InstallerOptions.ToArguments(request.Choices));
+        Assert.Equal([".md"], InstallerOptions.Parse(["--update", "--file-types=default"]).Choices.FileTypes);
+        Assert.Empty(InstallerOptions.Parse(["--configure", "--file-types=none"]).Choices.FileTypes!);
+        Assert.Equal(SetupAction.None, InstallerOptions.Parse(["--autostart"]).Action);
+
+        Assert.Throws<BusinessException>(() => InstallerOptions.Parse(["--quiet", "--autostart=vielleicht"]));
+        Assert.Throws<BusinessException>(() => InstallerOptions.Parse(["--quiet", "--file-types=.docx"]));
+        Assert.Throws<BusinessException>(() => InstallerOptions.Parse(["--quiet", "--color=blue"]));
+        Assert.Throws<BusinessException>(() => InstallerOptions.Parse(["--tray", "--autostart=yes"]));
+    }
+
+    [Fact]
+    public void The_embedded_installer_json_is_what_the_manifest_publishes()
+    {
+        var config = InstallerOptions.Config;
+        Assert.NotNull(config.Autostart);
+        Assert.NotNull(config.DesktopShortcut);
+        Assert.NotNull(config.AutomaticUpdates);
+        Assert.Empty(config.FileTypes);
+        Assert.Equal((false, true, true), (InstallerOptions.Defaults.DesktopShortcut, InstallerOptions.Defaults.Autostart, InstallerOptions.Defaults.AutomaticUpdates));
     }
 
     [Fact]

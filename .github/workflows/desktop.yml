@@ -206,6 +206,13 @@ jobs:
     if: always() && needs.version.result == 'success' && needs.windows.result == 'success'
     runs-on: ubuntu-latest
     steps:
+      # installer.json: the install options (SETUP-08) go into the manifest as "installer" (ThixLauncher, ThixInstall)
+      - uses: actions/checkout@v4
+        with:
+          path: source
+          sparse-checkout: src/ThixFred.Core/installer.json
+          sparse-checkout-cone-mode: false
+
       - uses: actions/download-artifact@v4
         with:
           name: windows
@@ -240,6 +247,7 @@ jobs:
             "setup": "ThixFredSetup.exe",
             "sha256": "$(sha ThixFredSetup.exe)",
             "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "installer": $(cat ../source/src/ThixFred.Core/installer.json),
             "packages": {
               "win-x64": { "file": "ThixFredSetup.exe", "sha256": "$(sha ThixFredSetup.exe)" }${mac}
             }

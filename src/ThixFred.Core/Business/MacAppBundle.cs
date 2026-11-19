@@ -14,6 +14,9 @@ namespace ThixFred.Core.Business;
 public static class MacAppBundle
 {
     /// <summary>The bundle this process runs from (…/ThixFred.app/Contents/MacOS/ThixFred), or null.</summary>
+    /// <summary>CFBundleIdentifier of ThixFred.app (scripts/package-macos.sh).</summary>
+    public const string BundleId = "info.schmoldt.thixfred";
+
     public static string? Current => BundleOf(Environment.ProcessPath);
 
     internal static string? BundleOf(string? executablePath)

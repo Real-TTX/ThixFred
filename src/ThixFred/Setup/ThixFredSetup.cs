@@ -5,6 +5,7 @@ using MatDesktop;
 using ThixFred.Controls;
 using ThixFred.Core.Business;
 using ThixFred.Core.Infrastructure;
+using ThixFred.Core.Models;
 
 namespace ThixFred.Setup;
 
@@ -38,10 +39,8 @@ internal static class ThixFredSetup
                 }
                 else
                 {
-                    var options = isUpdate
-                        ? null
-                        : new InstallOptions(run.Options.GetValueOrDefault("autostart"), run.Options.GetValueOrDefault("shortcut"), run.Options.GetValueOrDefault("updates"));
-                    await Task.Run(() => InstallService.Install(source, options, Report));
+                    var choices = isUpdate ? null : Choices(run.Options);
+                    await Task.Run(() => InstallService.Install(source, choices, Report));
                 }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException
@@ -91,10 +90,7 @@ internal static class ThixFredSetup
                 MatSetupStep.Welcome(
                     $"ThixFred ist dein Launcher: {hotkey} öffnet ein Suchfeld – Programme starten und beenden, rechnen, >Befehle ausführen. Es läuft im Infobereich der Taskleiste.",
                     Note($"Wird für dein Benutzerkonto installiert – ohne Administratorrechte – nach\n{programFolder}")),
-                MatSetupStep.WithOptions(null,
-                    MatSetupOption.Autostart("Im Infobereich, ohne Fenster"),
-                    MatSetupOption.DesktopShortcut("Ein Startmenü-Eintrag wird immer angelegt"),
-                    MatSetupOption.AutomaticUpdates("Neue Versionen ohne Rückfrage, ThixFred startet danach neu")),
+                MatSetupStep.WithOptions(null, [.. Options()]),
             ],
         };
 
@@ -113,6 +109,43 @@ internal static class ThixFredSetup
         });
         return window;
     }
+
+    /// <summary>
+    /// The switches of the Options step from the install options (installer.json, SETUP-08), each on as its default: the same
+    /// questions ThixLauncher asks before it installs quietly.
+    /// </summary>
+    internal static IEnumerable<MatSetupOption> Options()
+    {
+        var config = InstallerOptions.Config;
+        if (config.Autostart is { } autostart)
+        {
+            yield return MatSetupOption.Autostart("Im Infobereich, ohne Fenster") with { IsOn = autostart.Default };
+        }
+
+        if (config.DesktopShortcut is { } shortcut)
+        {
+            yield return MatSetupOption.DesktopShortcut("Ein Startmenü-Eintrag wird immer angelegt") with { IsOn = shortcut.Default };
+        }
+
+        if (config.AutomaticUpdates is { } updates)
+        {
+            yield return MatSetupOption.AutomaticUpdates("Neue Versionen ohne Rückfrage, ThixFred startet danach neu") with { IsOn = updates.Default };
+        }
+
+        foreach (var type in config.FileTypes)
+        {
+            yield return new MatSetupOption(FileTypeKey + type.Extension, $"{type.Extension}-Dateien mit ThixFred öffnen", type.Name, type.Default);
+        }
+    }
+
+    /// <summary>The answers of the Options step as install choices.</summary>
+    internal static InstallChoices Choices(IReadOnlyDictionary<string, bool> options) => new(
+        options.TryGetValue("shortcut", out var shortcut) ? shortcut : null,
+        options.TryGetValue("autostart", out var autostart) ? autostart : null,
+        options.TryGetValue("updates", out var updates) ? updates : null,
+        InstallerOptions.Config.FileTypes.Where(type => options.GetValueOrDefault(FileTypeKey + type.Extension)).Select(type => type.Extension).ToList());
+
+    private const string FileTypeKey = "type:";
 
     /// <summary>The word mark of the title bar ("Thix" and "Fred" in the accent text) for the header of the setup.</summary>
     private static TextBlock WordMark()

@@ -84,6 +84,14 @@ internal static class SelfTest
             return Task.FromResult("");
         });
 
+        await Check("install options (installer.json, arguments)", () =>
+        {
+            Ensure(InstallerOptions.Config is { Autostart: not null, DesktopShortcut: not null }, "installer.json not read");
+            var request = InstallerOptions.Parse([InstallerOptions.QuietArgument, "--autostart=no", "--desktop-shortcut=yes"]);
+            Ensure(request is { Action: SetupAction.Install, Choices: { Autostart: false, DesktopShortcut: true } }, "arguments not read");
+            return Task.FromResult("");
+        });
+
         await Check("token store", () =>
         {
             var stored = TokenStore.Save("self-test", "geheim");

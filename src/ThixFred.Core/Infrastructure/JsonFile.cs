@@ -58,6 +58,8 @@ internal static class JsonFile
 
     public static string Serialize<T>(T value) => JsonSerializer.Serialize(value, Compact);
 
+    public static T? Deserialize<T>(Stream json) where T : class => JsonSerializer.Deserialize<T>(json, Options);
+
     public static T? Deserialize<T>(string json) where T : class
     {
         try

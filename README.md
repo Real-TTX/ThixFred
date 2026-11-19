@@ -91,6 +91,18 @@ Ein Skript im Ordner `scripts` (Einstellungen › Erweitert) – oder über **Pl
 starten. Installiert pro Benutzer nach `%LocalAppData%\Programs\ThixFred` (ohne Administratorrechte), mit Startmenü,
 „Installierte Apps“, optional Autostart, Desktop-Verknüpfung und automatischen Updates (vorausgewählt).
 
+**Ohne Fenster** (ThixLauncher, ThixInstall, Administratoren) – die Optionen des Setups als Argumente (MatDesign SETUP-05/08;
+was angeboten wird, steht in `installer.json` und im Update-Manifest unter `installer`):
+
+```
+ThixFredSetup.exe --quiet --desktop-shortcut=yes --autostart=no --automatic-updates=yes [--file-types=.a,.b|none|default] [--start]
+ThixFred.exe --configure --autostart=yes        # nur anwenden (macOS: nach dem Kopieren des Bundles)
+ThixFred.exe --uninstall --quiet
+```
+
+Nicht angegebene Optionen: bei der Erstinstallation der Standard, bei einem Update bleibt es, wie es ist. Ein falscher Wert
+bricht mit Exit-Code 2 ab, ohne etwas zu installieren.
+
 **macOS** – `ThixFred-macOS-arm64.dmg` (Apple Silicon) bzw. `-x64.dmg` (Intel) öffnen und ThixFred in „Programme“ ziehen.
 ThixFred lebt in der Menüleiste. Die App ist (noch) ad hoc signiert: beim ersten Start Rechtsklick › Öffnen.
 

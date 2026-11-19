@@ -64,6 +64,12 @@ src/ThixFred.Core       (no UI) models, business layer (static classes), infrast
                         prefs, keyword match, run / filter, JSON or line results), StoreService (catalog, install with SHA-256
                         and zip-path check, update, uninstall), ConfigSync (what goes to the cloud: collections settings, themes,
                         websearches, scripts, store; index sync.json) + SyncService (sign-in browser/password, the loop),
+                        InstallerOptions (SETUP-08 of MatDesign: installer.json – embedded, and as "installer" in the update
+                        manifest – says what the setup offers: desktop shortcut, autostart, automatic updates, file types; the
+                        command line --quiet / --update / --configure [--desktop-shortcut=yes|no --autostart=yes|no
+                        --automatic-updates=yes|no --file-types=.a,.b|none|default] [--start], a wrong value = exit code 2;
+                        Current/Apply; file types: Platform/Windows/FileAssociations in HKCU\Software\Classes, Platform/Mac/
+                        MacFileAssociations with Launch Services),
                         SettingsService, HotkeyService, AccessPolicy (LockConfiguration, DisableCloud, DisableUpdates,
                         DisableScripts, DisableStore), AutostartService, InstallService, UpdateService, MacAppBundle, SampleData,
                         Slug
