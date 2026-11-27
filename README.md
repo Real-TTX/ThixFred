@@ -39,7 +39,8 @@ die **ThixCloud** (MatCloud), damit ThixFred auf allen deinen Computern gleich e
 - **ThixCloud**: Einstellungen, Themes, Websuchen, deine Skripte und die Store-Pakete auf allen PCs und Macs gleich –
   angemeldet im Browser mit Code (oder Benutzername und Passwort). Tastenkürzel und Fenster bleiben je Computer.
 - **Tray / Menüleiste**, **Autostart**, **Setup** (Windows) bzw. **App-Bundle + DMG** (macOS), **OTA-Updates** mit optionalem
-  **Full-Auto-Update**, Richtlinien für Administratoren.
+  **Full-Auto-Update**, Richtlinien für Administratoren. Nach „Update installieren“ kommt ThixFred mit dem Einstellungsfenster
+  zurück, ein Update im Hintergrund startet es wieder still im Tray.
 
 | Plugins | Skript schreiben | Store |
 |---|---|---|

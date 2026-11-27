@@ -20,7 +20,8 @@ namespace ThixFred;
 ///  - One instance per user and data folder (MatSingleInstance, DESK-05): a second start opens the window of the first one.
 ///  - The launcher and the settings window are built once at start and only shown and hidden afterwards: the shortcut opens
 ///    the launcher at once; the program index comes from its cache and is scanned again in the background.
-///  - "--autostart" (sign-in) and "--tray" (after an update) start hidden in the tray / menu bar.
+///  - "--autostart" (sign-in) and "--tray" (after an update) start hidden in the tray / menu bar - after an update asked for in the
+///    settings window (or with it open) that window shows again on its updates tab (UpdateService.TakeShowWindowAfterUpdate).
 /// </summary>
 public partial class App : Application
 {
@@ -87,6 +88,9 @@ public partial class App : Application
     /// <summary>The settings window (null during setup).</summary>
     public MainWindow? MainWindow => _mainWindow;
 
+    /// <summary>The settings window is on the screen (not only in the tray).</summary>
+    public bool IsMainWindowShown => _mainWindow is { IsVisible: true };
+
     /// <summary>The launcher (null during setup).</summary>
     public LauncherWindow? Launcher => _launcher;
 
@@ -117,7 +121,13 @@ public partial class App : Application
         // Build the launcher's visuals once, off screen, so the first shortcut opens it as fast as every later one.
         _launcher.Prewarm();
         var startHidden = args.Contains(TrayArgument) || args.Contains(AutostartService.StartupArgument);
-        if (!startHidden)
+        // After an update asked for in the settings window (or with it open) that window comes back on its updates tab, even though
+        // the restart says "--tray"; an update in the background stays in the tray.
+        if (startHidden && UpdateService.TakeShowWindowAfterUpdate())
+        {
+            Dispatcher.UIThread.Post(() => ShowSettings(Pages.SettingsPage.UpdatesTab), DispatcherPriority.Background);
+        }
+        else if (!startHidden)
         {
             Dispatcher.UIThread.Post(() => ShowLauncher(), DispatcherPriority.Background);
         }

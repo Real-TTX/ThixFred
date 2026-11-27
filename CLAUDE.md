@@ -71,7 +71,10 @@ src/ThixFred.Core       (no UI) models, business layer (static classes), infrast
                         Current/Apply; file types: Platform/Windows/FileAssociations in HKCU\Software\Classes, Platform/Mac/
                         MacFileAssociations with Launch Services),
                         SettingsService, HotkeyService, AccessPolicy (LockConfiguration, DisableCloud, DisableUpdates,
-                        DisableScripts, DisableStore), AutostartService, InstallService, UpdateService, MacAppBundle, SampleData,
+                        DisableScripts, DisableStore), AutostartService, InstallService, UpdateService (the update restarts ThixFred
+                        with "--tray"; one asked for in the settings window or with it open leaves the marker "show-window-after-update"
+                        in the update folder - written before the installer starts, stale after 15 min - and the restart shows the
+                        settings window on Updates once; a background update stays in the tray), MacAppBundle, SampleData,
                         Slug
   Infrastructure/       AppPaths, AppInfo, AppClock, JsonFile (atomic JSON), SettingsStore, TokenStore (DPAPI/Keychain), PngWriter,
                         Log, ProblemReports
